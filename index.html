@@ -1281,5 +1281,150 @@ __FIRE_LAST_ROWS = rows;
 })();
 </script>
 
+<!-- === Cloud Debug Panel + Fixed DocId + Force Apply === -->
+<style>
+#__toastRoot{position:fixed;right:16px;top:16px;z-index:2147483647;display:flex;flex-direction:column;gap:8px}
+.toast{background:#111827;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:.98}
+.toast.ok{background:#065f46}.toast.warn{background:#92400e}.toast.err{background:#7f1d1d}
+#cloudDiag{position:fixed;bottom:16px;right:16px;background:#0b1020;color:#e5f0ff;border:1px solid #3b82f6;border-radius:12px;padding:10px 12px;z-index:2147483646;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px;min-width:260px}
+#cloudDiag h4{margin:0 0 6px 0;font-size:12px;font-weight:700;color:#93c5fd}
+#cloudDiag pre{margin:6px 0;max-height:140px;overflow:auto;background:#0a0f1a;padding:6px 8px;border-radius:8px}
+#cloudDiag .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#cloudDiag button{padding:4px 8px;border:1px solid #93c5fd;background:#0a1222;color:#cfe1ff;border-radius:8px;cursor:pointer}
+#cloudDiag small{opacity:.85}
+</style>
+<div id="__toastRoot"></div>
+<div id="cloudDiag" role="status" aria-live="polite">
+  <h4>雲端診斷面板</h4>
+  <div class="row"><span>文件路徑</span><small id="cd_path">trafficSnapshots/core-team-traffic-v3</small></div>
+  <div class="row"><span>rows 長度</span><small id="cd_len">-</small></div>
+  <div class="row"><span>含資料？</span><small id="cd_has">-</small></div>
+  <div class="row"><span>第一筆鍵</span><small id="cd_keys">-</small></div>
+  <div class="row"><span></span><button id="cd_force">強制套用雲端</button></div>
+  <pre id="cd_preview">（成功讀取後會顯示前1筆內容）</pre>
+</div>
+<script>
+/* —— 小工具 —— */
+function showToast(m,t){try{const r=document.getElementById("__toastRoot");const e=document.createElement("div");e.className="toast "+(t||"ok");e.innerHTML=m;r.appendChild(e);setTimeout(()=>{e.style.transition="opacity .25s";e.style.opacity="0";setTimeout(()=>e.remove(),260)},2200)}catch(e){}}
+function __setTxt(id,val){const el=document.getElementById(id); if(el) el.textContent=String(val);}
+function __keys(o){try{return Object.keys(o||{}).slice(0,8).join(", ");}catch(e){return "-";}}
+function __pretty(o){try{return JSON.stringify(o,null,2);}catch(e){return String(o);}}
+function __hasRows(rows){if(!Array.isArray(rows))return false;for(let i=0;i<rows.length;i++){if(rows[i]&&Object.keys(rows[i]).length)return true}return false;}
+window.__showCloudDiag=function(rows,path){
+  __setTxt('cd_path', path||'trafficSnapshots/core-team-traffic-v3');
+  __setTxt('cd_len', Array.isArray(rows)? rows.length : '非陣列');
+  __setTxt('cd_has', __hasRows(rows)? '是' : '否');
+  __setTxt('cd_keys', Array.isArray(rows)&&rows[0]? __keys(rows[0]) : '-');
+  const pv=document.getElementById('cd_preview');
+  if(pv) pv.textContent = Array.isArray(rows)&&rows[0]? __pretty(rows[0]) : '（沒有可顯示的內容）';
+};
+/* 固定 docId：trafficSnapshots/core-team-traffic-v3 */
+(function(){
+  if(typeof getSnapId!=="function"){
+    window.getSnapId=function(){ return "core-team-traffic-v3"; };
+  }else{
+    const _g=getSnapId; window.getSnapId=function(){ try{return "core-team-traffic-v3";}catch(e){return _g();} };
+  }
+})();
+/* MM/DD 與 ISO 互通的 applyRows 覆寫（保證能吃到 2025-10-01 或 10/01） */
+(function(){
+  const prev=window.applyRows;
+  window.applyRows=function(rows){
+    const DK=window.DATE_KEYS||[];   // 10/01
+    const DS=window.DATES||[];       // 2025-10-01
+    if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    const TB=document.getElementById('tbody'); if(!TB) return rows;
+    [...TB.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells=tr.querySelectorAll('td');
+      DK.forEach((dispKey,di)=>{
+        const isoKey=DS[di]; const cell=cells[3+di]; if(!cell)return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const row=rows && rows[ri] || {};
+        let baseKey=null;
+        if(Object.prototype.hasOwnProperty.call(row, dispKey)) baseKey=dispKey;
+        else if(Object.prototype.hasOwnProperty.call(row, isoKey)) baseKey=isoKey;
+        else if(/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+          const y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+          const iso2=y+"-"+String(dispKey).replace(/\//g,"-");
+          if(Object.prototype.hasOwnProperty.call(row, iso2)) baseKey=iso2;
+        }
+        if(!baseKey) baseKey=dispKey||isoKey||"";
+        const v=row[baseKey] || ""; if(b){ b.setAttribute('aria-label',v); b.textContent=v; }
+        const gval=parseInt(row[baseKey+'_g'])||0; if(g) g.value=String(gval);
+        const partners=Array.isArray(row[baseKey+'_p'])? row[baseKey+'_p'] : [];
+        if(p) p.dataset.partners=JSON.stringify(partners);
+        const n=partners.length>0? partners.length : (parseInt(row[baseKey+'_1on1'])||0);
+        if(pill){ pill.dataset.count=String(n); pill.textContent=`🤝 ${n}`; }
+        if(b) b.classList.toggle('o2o', n>0);
+      });
+      if(typeof window.fillRightSummary==='function'){ try{ fillRightSummary(tr,ri); }catch(e){} }
+    });
+    if(typeof window.updateTotals==='function'){ try{ updateTotals(); }catch(e){} }
+    return rows;
+  };
+  if(prev && window.__FIRE_LAST_ROWS){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }
+})();
+/* 綁定「雲端儲存/讀取」：確保走 Firestore (__fireSnap) */
+(function(){
+  function bind(btn, fn){
+    if(!btn || !fn) return;
+    const c=btn.cloneNode(true); btn.replaceWith(c);
+    c.addEventListener('click', function(e){
+      e.preventDefault(); e.stopImmediatePropagation();
+      try{ const p=fn(); if(p && p.catch){ p.catch(err=>showToast("Firestore 錯誤："+err,"err")); } }
+      catch(err){ showToast("Firestore 執行失敗："+err,"err"); }
+    }, true);
+  }
+  function tryBind(){
+    const s=document.getElementById('saveBtn');
+    const l=document.getElementById('loadBtn');
+    const snap=window.__fireSnap;
+    if(!snap) return false;
+    if(s) bind(s, snap.saveToFirestore || snap.save);
+    if(l) bind(l, snap.loadFromFirestore || snap.load);
+    return !!(s||l);
+  }
+  let t=0, iv=setInterval(()=>{ t++; if(tryBind()||t>40) clearInterval(iv); }, 200);
+  try{
+    const ob=new MutationObserver(()=>tryBind());
+    ob.observe(document.body, {childList:true, subtree:true});
+    setTimeout(()=>ob.disconnect(), 20000);
+  }catch(e){}
+})();
+/* 讀取後更新診斷面板 + 強制套用鈕 */
+(function(){
+  const btn=document.getElementById('cd_force');
+  if(btn) btn.addEventListener('click', function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      const rows=window.__FIRE_LAST_ROWS;
+      if(!rows) return showToast("沒有快取 rows，請先按【雲端讀取】","warn");
+      if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+      if(typeof window.applyRows==='function'){ applyRows(rows); }
+      showToast("已強制套用雲端 rows","ok");
+    }catch(err){ showToast("強制套用失敗："+err,"err"); }
+  }, true);
+  function hook(){
+    const s=window.__fireSnap;
+    if(!s || typeof s.loadFromFirestore!=="function") return false;
+    const orig=s.loadFromFirestore;
+    s.loadFromFirestore=async function(){
+      const res=await orig.apply(this, arguments);
+      const path="trafficSnapshots/"+(typeof getSnapId==='function'? getSnapId() : 'core-team-traffic-v3');
+      try{ window.__showCloudDiag(window.__FIRE_LAST_ROWS, path); }catch(e){}
+      return res;
+    };
+    // 首次若已有 rows 就顯示
+    try{ if(window.__FIRE_LAST_ROWS){ window.__showCloudDiag(window.__FIRE_LAST_ROWS, "trafficSnapshots/"+getSnapId()); } }catch(e){}
+    return true;
+  }
+  let n=0, timer=setInterval(()=>{ n++; if(hook()||n>40) clearInterval(timer); }, 200);
+})();
+</script>
+<!-- === /Cloud Debug Panel === -->
+
 </body>
 </html>
