@@ -462,5 +462,114 @@
   })();
 </script>
 
+
+<!-- === Stable Auto-Render Patch (waits for tbody, retries, observes DOM) === -->
+<script>
+(function(){
+  // tiny toast
+  function toast(m){
+    var id="__toastRoot"; var r=document.getElementById(id);
+    if(!r){ r=document.createElement("div"); r.id=id; r.style.cssText="position:fixed;right:16px;top:16px;z-index:2147483647;display:flex;flex-direction:column;gap:8px"; document.body.appendChild(r); }
+    var e=document.createElement("div"); e.style.cssText="background:#111827;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)"; e.textContent=m;
+    r.appendChild(e); setTimeout(function(){ e.style.transition="opacity .25s"; e.style.opacity="0"; setTimeout(function(){ e.remove(); },260); }, 1800);
+  }
+  function getTB(){ return document.getElementById('tbody') || document.querySelector('tbody.data-body') || document.querySelector('tbody'); }
+
+  // Force render logic (same as SAFE but返回成功與否)
+  function forceRender(rows){
+    if(!Array.isArray(rows)) return false;
+    var DK = window.DATE_KEYS || [];
+    var DS = window.DATES || [];
+    var TB = getTB();
+    if(!TB) return false;
+    var trs = TB.querySelectorAll('tr');
+    for(var ri=0; ri<trs.length; ri++){
+      var tr = trs[ri];
+      var row = rows[ri] || {};
+      var tds = tr.querySelectorAll('td');
+      for(var di=0; di<DK.length; di++){
+        var dispKey = DK[di], isoKey = DS[di];
+        var cell = tds[3+di]; if(!cell) continue;
+        var key = row.hasOwnProperty(dispKey) ? dispKey : row.hasOwnProperty(isoKey) ? isoKey : null;
+        if(!key){
+          if(/^\d{2}\/\d{2}$/.test(String(dispKey||''))){
+            var y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+            var iso2 = y + '-' + dispKey.replace('/','-');
+            if(row.hasOwnProperty(iso2)) key = iso2;
+          }
+        }
+        if(!key) continue;
+        var lamp = row[key] || '';
+        var g    = parseInt(row[key + '_g']) || 0;
+        var o2o  = parseInt(row[key + '_1on1']) || 0;
+        var partners = Array.isArray(row[key + '_p']) ? row[key + '_p'] : [];
+        var status = cell.querySelector('.status');
+        if(status){ status.textContent = lamp; status.setAttribute('aria-label', lamp); }
+        var gInput = cell.querySelector('.guest-input');
+        if(gInput){ gInput.value = String(g); }
+        var pill = cell.querySelector('.o2o-pill');
+        if(pill){ var n = partners.length>0? partners.length : o2o; pill.dataset.count=String(n); pill.textContent='🤝 '+n; }
+        if(!status && !gInput && !pill){
+          cell.innerHTML = '<div class="fr-cell"><span class="lamp">'+(lamp||'')+'</span><span class="mini">👥'+o2o+'</span><span class="mini">🧑‍🦱'+g+'</span></div>';
+          if(!document.getElementById('fr-mini-css')){
+            var css=document.createElement('style'); css.id='fr-mini-css';
+            css.textContent='.fr-cell{display:flex;gap:8px;align-items:center;justify-content:center}.fr-cell .mini{opacity:.85;font-size:12px}';
+            document.head.appendChild(css);
+          }
+        }
+      }
+    }
+    try{ if(typeof window.updateTotals==='function') window.updateTotals(); }catch(e){}
+    return true;
+  }
+
+  // Apply pipeline
+  function tryApply(){
+    var rows = window.__FIRE_LAST_ROWS;
+    if(!Array.isArray(rows)) return false;
+    var tb = getTB();
+    var ok = false;
+
+    if(typeof window.applyRows==='function' && tb){
+      try { window.applyRows(rows); ok = true; toast("已透過 applyRows 渲染"); } catch(e){}
+    }
+    if(!ok && tb){
+      ok = forceRender(rows);
+      if(ok) toast("已強制渲染雲端 rows");
+    }
+    return ok;
+  }
+
+  // Retry loop + DOM observer
+  var retries = 0;
+  var timer = null;
+  function startRetry(){
+    if(timer) return;
+    timer = setInterval(function(){
+      retries++;
+      if(tryApply() || retries>60){ // 最多 60 次 * 500ms = 30 秒
+        clearInterval(timer); timer=null;
+      }
+    }, 500);
+  }
+
+  // 當 FIRE_ROWS_READY 或 DOMContentLoaded 時啟動
+  window.addEventListener('FIRE_ROWS_READY', function(){ startRetry(); });
+  document.addEventListener('DOMContentLoaded', function(){ startRetry(); });
+
+  // 監看 body 變動，偵測 tbody 晚到
+  try {
+    var ob = new MutationObserver(function(){
+      if(getTB()) tryApply();
+    });
+    ob.observe(document.body, {childList:true, subtree:true});
+    setTimeout(function(){ try{ ob.disconnect(); }catch(_e){} }, 30000);
+  } catch(_e) {}
+
+  // 若 rows 先到再補
+  setTimeout(function(){ if(Array.isArray(window.__FIRE_LAST_ROWS)) startRetry(); }, 800);
+})();
+</script>
+
 </body>
 </html>
