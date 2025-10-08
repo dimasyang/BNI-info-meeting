@@ -1426,5 +1426,32 @@ window.__showCloudDiag=function(rows,path){
 </script>
 <!-- === /Cloud Debug Panel === -->
 
+
+<!-- Firebase CDN (compat) for GitHub Pages -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDZYbqfz-A5BcpKmO_TO8ot5AAp4bUeTE",
+    authDomain: "bni-info-meeting.firebaseapp.com",
+    projectId: "bni-info-meeting",
+    storageBucket: "bni-info-meeting.firebasestorage.app",
+    messagingSenderId: "943878549247",
+    appId: "1:943878549247:web:a1ab47cbf589e3b1ab26ca",
+    measurementId: "G-P2QGJ52GKW"
+  };
+  try { if (!firebase.apps.length) firebase.initializeApp(firebaseConfig); } catch(e){}
+  const db = firebase.firestore();
+  const SNAP_COLL = "trafficSnapshots";
+  const DOC_ID = "core-team-traffic-v3";
+  db.collection(SNAP_COLL).doc(DOC_ID).get().then(doc=>{
+    if(!doc.exists){ console.warn("找不到文件", SNAP_COLL+"/"+DOC_ID); return; }
+    const data = doc.data()||{};
+    window.__FIRE_LAST_ROWS = Array.isArray(data.rows)? data.rows : [];
+    console.log("✅ Firestore 已連線；rows length =", window.__FIRE_LAST_ROWS.length);
+    if (typeof window.applyRows === "function"){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){ console.error(e);} }
+  }).catch(err=>console.error("Firestore 讀取錯誤：", err));
+</script>
+
 </body>
 </html>
