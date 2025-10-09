@@ -1114,7 +1114,7 @@ document.addEventListener("DOMContentLoaded", function(){ setTimeout(hookButtons
   function refreshUI(){
     btn.classList.toggle("on", editing);
     btn.textContent = editing ? "編輯中" : "編輯";
-    document.documentElement.classList.toggle("editing", editing);
+    documentElement.classList.toggle("editing", editing);
   }
   btn.addEventListener("click", ()=>{
     if (!editing){
