@@ -3,25 +3,6 @@
 <html lang="zh-Hant">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-
-<style>
-/* Minimized diagnostics (hb-20251009-min) */
-#cloudDiag.minimized{ display:none !important; }
-#cd_fab{
-  position:fixed; right:14px; bottom:14px; width:30px; height:30px;
-  border-radius:9999px; background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd;
-  display:flex; align-items:center; justify-content:center;
-  font-weight:700; font-size:12px; cursor:pointer; z-index:2147483647;
-  box-shadow:0 2px 8px rgba(0,0,0,.35);
-}
-#cd_fab.hidden{ display:none; }
-#cloudDiag .minbtn{
-  position:absolute; top:6px; right:6px; background:#1f2937; color:#cfe1ff;
-  border:0; border-radius:6px; padding:2px 6px; font-size:12px; cursor:pointer;
-}
-@media print{ #cd_fab{ display:none } }
-</style>
-
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>核心團成員－10/01~11/05：出席/遲到/缺席＋來賓（可輸入）＋一對一＋矩陣＋亮燈</title>
@@ -186,19 +167,27 @@
   background:rgba(255,255,255,.85);backdrop-filter:saturate(120%) blur(1px);}
 #authShield.hidden{display:none;}
 #authShield .tap{width:14px;height:14px;border-radius:9999px;border:2px solid #111;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);}
-</style>
 
-</style>
-
-</style>
-
-<style>
-/* RWD helper (hb-20251009-rwd) */
+/* Minimized diagnostics + RWD tools (final) */
+#cloudDiag.minimized{ display:none !important }
+#cd_fab{
+  position:fixed; right:14px; bottom:14px; width:30px; height:30px;
+  border-radius:9999px; background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:12px; cursor:pointer; z-index:2147483647;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+#cd_fab.hidden{ display:none }
+#cloudDiag .minbtn{
+  position:absolute; top:6px; right:6px; background:#1f2937; color:#cfe1ff;
+  border:0; border-radius:6px; padding:2px 6px; font-size:12px; cursor:pointer;
+}
+/* RWD helpers */
 :root{ --rwd-zoom:1 }
 #rwd_wrap{ transform: scale(var(--rwd-zoom)); transform-origin: top left; }
 .rwd-scroll{ overflow:auto; -webkit-overflow-scrolling: touch; }
 body.rwd-mobile{ font-size: clamp(15px, 1.9vw + 0.5rem, 18px); line-height: 1.35; }
-body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px; }
+body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px }
 #rwd_fab_bar{ position:fixed; right:14px; bottom:58px; z-index:2147483646; display:flex; flex-direction:column; gap:10px }
 #rwd_fab_bar .fab{ width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
   background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd; box-shadow:0 4px 12px rgba(0,0,0,.35); cursor:pointer; }
@@ -206,11 +195,14 @@ body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px;
   padding:8px 10px; border-radius:10px; display:none; gap:8px; align-items:center; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:2147483646 }
 #rwd_zoom_card input[type="range"]{ width:160px }
 @media (max-width:768px){
-  /* prefer mobile mode by default on small screens */
-  body:not(.rwd-mobile){ font-size: 15px; }
+  body:not(.rwd-mobile){ font-size: 15px }
 }
+
 </style>
 
+</style>
+
+</style>
 </head>
 <body>
 
@@ -1647,52 +1639,8 @@ window.__showCloudDiag=function(rows,path){
 </script>
 <!-- ===== /Force Render Layer ===== -->
 
+
 <div id="cd_fab" aria-label="開啟雲端診斷">診</div>
-
-<script>
-(function(){
-  var box = document.getElementById('cloudDiag');
-  if(!box) return;
-  var fab = document.getElementById('cd_fab');
-  var btn = document.getElementById('cd_min_btn');
-
-  function setMin(on){
-    if(on){
-      box.classList.add('minimized');
-      if(fab) fab.classList.remove('hidden');
-      try{ localStorage.setItem('cd_min','1'); }catch(e){}
-    }else{
-      box.classList.remove('minimized');
-      if(fab) fab.classList.add('hidden');
-      try{ localStorage.setItem('cd_min','0'); }catch(e){}
-    }
-  }
-
-  // default to minimized (or restore last choice)
-  var last = null;
-  try{ last = localStorage.getItem('cd_min'); }catch(e){}
-  if(last === null) setMin(true);
-  else setMin(last === '1');
-
-  if(fab){
-    fab.addEventListener('click', function(){
-      setMin(false);
-    });
-  }
-  if(btn){
-    btn.addEventListener('click', function(){
-      setMin(true);
-    });
-  }
-
-  // ESC to minimize
-  document.addEventListener('keydown', function(ev){
-    if(ev.key==='Escape'){ setMin(true); }
-  });
-})();
-</script>
-
-
 <div id="rwd_fab_bar" aria-label="RWD tools">
   <div id="rwd_fab_mobile" class="fab" title="手機版切換">📱</div>
   <div id="rwd_fab_zoom" class="fab" title="縮放">🔍</div>
@@ -1702,68 +1650,139 @@ window.__showCloudDiag=function(rows,path){
   <input id="rwd_zoom_range" type="range" min="0.75" max="1.4" step="0.05" value="1" />
   <span id="rwd_zoom_val">100%</span>
 </div>
+
+
 <script>
 (function(){
-  // Wrap all body children into #rwd_wrap for scaling and scrolling safety
+  // Wrap main content for zoom scrolling
   try{
-    var wrap = document.createElement('div');
-    wrap.id = 'rwd_wrap';
-    var sc = document.createElement('div');
-    sc.className = 'rwd-scroll';
-    while(document.body.firstChild){
-      var n = document.body.firstChild;
-      // keep FABs and diagnostic panel outside the wrap; move later
-      if(n.id === 'cd_fab' || n.id === 'cloudDiag') break;
-      sc.appendChild(n);
+    var wrap = document.createElement('div'); wrap.id='rwd_wrap';
+    var sc = document.createElement('div'); sc.className='rwd-scroll';
+    while(document.body.firstChild && !['cd_fab','rwd_fab_bar','rwd_zoom_card','cloudDiag'].includes(document.body.firstChild.id||'')){
+      sc.appendChild(document.body.firstChild);
     }
-    wrap.appendChild(sc);
-    document.body.insertBefore(wrap, document.body.firstChild);
+    wrap.appendChild(sc); document.body.insertBefore(wrap, document.body.firstChild);
   }catch(e){}
 
+  var box = document.getElementById('cloudDiag');
+  var fab = document.getElementById('cd_fab');
+  var btn = document.getElementById('cd_min_btn');
+  function setMin(on){
+    if(!box||!fab) return;
+    if(on){ box.classList.add('minimized'); fab.classList.remove('hidden'); try{localStorage.setItem('cd_min','1');}catch(e){} }
+    else { box.classList.remove('minimized'); fab.classList.add('hidden'); try{localStorage.setItem('cd_min','0');}catch(e){} }
+  }
+  try{ var last = localStorage.getItem('cd_min'); if(last===null) setMin(true); else setMin(last==='1'); }catch(e){ setMin(true) }
+  if(fab) fab.addEventListener('click', function(){ setMin(false) });
+  if(btn) btn.addEventListener('click', function(){ setMin(true) });
+  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') setMin(true) });
+
+  // RWD controls
   var body = document.body;
   var fabM = document.getElementById('rwd_fab_mobile');
   var fabZ = document.getElementById('rwd_fab_zoom');
   var card = document.getElementById('rwd_zoom_card');
   var range = document.getElementById('rwd_zoom_range');
   var val = document.getElementById('rwd_zoom_val');
+  function setZoom(z){ z=Math.max(0.6,Math.min(1.6, z||1)); document.documentElement.style.setProperty('--rwd-zoom', z); if(val) val.textContent=Math.round(z*100)+'%'; try{localStorage.setItem('rwd_zoom', String(z));}catch(e){} }
+  function setMobile(on){ if(on){ body.classList.add('rwd-mobile'); }else{ body.classList.remove('rwd-mobile'); } try{localStorage.setItem('rwd_mobile', on?'1':'0');}catch(e){} }
+  try{ var z=parseFloat(localStorage.getItem('rwd_zoom')||'1'); if(!isNaN(z)){ setZoom(z); if(range) range.value=z; } var m=localStorage.getItem('rwd_mobile'); if(m!==null){ setMobile(m==='1'); } else if (window.matchMedia && window.matchMedia('(max-width:768px)').matches){ setMobile(true);} }catch(e){}
+  if(fabM) fabM.addEventListener('click', function(){ setMobile(!body.classList.contains('rwd-mobile')); });
+  if(fabZ) fabZ.addEventListener('click', function(){ if(!card) return; var show = card.style.display!=='flex'; card.style.display = show?'flex':'none'; });
+  if(range) range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); });
+  document.addEventListener('click', function(ev){ if(card && !card.contains(ev.target) && ev.target!==fabZ){ card.style.display='none'; } }, true);
+})();
+</script>
 
-  function setZoom(z){
-    z = Math.max(0.6, Math.min(1.6, z||1));
-    document.documentElement.style.setProperty('--rwd-zoom', z);
-    if(val) val.textContent = Math.round(z*100) + '%';
-    try{ localStorage.setItem('rwd_zoom', String(z)); }catch(e){}
+
+<!-- FIXTAG: cloud-toolbar v2 -->
+<style>
+#cloudToolbar{position:fixed;right:14px;bottom:14px;z-index:2147483646;display:flex;gap:8px;align-items:center}
+#cloudToolbar button{padding:8px 12px;border-radius:10px;border:1px solid #93c5fd;background:#0a1222;color:#cfe1ff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#cloudToolbar .save{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+#cloudToolbar .load{background:#10b981;border-color:#10b981;color:#fff}
+@media print{#cloudToolbar{display:none}}
+</style>
+<div id="cloudToolbar" aria-label="Cloud actions">
+  <button class="save" title="將目前名單/狀態寫入 Firestore">雲端儲存</button>
+  <button class="load" title="從 Firestore 載入雲端資料">雲端讀取</button>
+</div>
+<script>
+(function(){
+  function show(msg, level){ try{ (window.showToast||alert)(msg); }catch(_){
+    console && console.log('[Toast]', msg);
+  } }
+  function call(fnName){
+    try{
+      var fn = (window.__fireSnap && __fireSnap[fnName]) || window[fnName];
+      if (typeof fn !== 'function') { show('找不到 '+fnName+' 函式','err'); return; }
+      var p = fn();
+      if (p && p.catch) p.catch(function(err){ show('Firestore 錯誤: '+ (err && (err.message||err.code)||err), 'err'); });
+    }catch(err){ show('Firestore 執行失敗: '+err, 'err'); }
+  }
+  var bar = document.getElementById('cloudToolbar');
+  if (bar){
+    bar.querySelector('.save').addEventListener('click', function(){ call('saveToFirestore'); });
+    bar.querySelector('.load').addEventListener('click', function(){ call('loadFromFirestore'); });
+  }
+})();
+</script>
+
+
+<script>
+// Cloud actions bridge (hb-bridge-20251009)
+(function(){
+  function show(msg){ try{ (window.showToast||alert)(msg); }catch(_){ console.log('[Toast]', msg); } }
+
+  function findButton(regex){
+    var nodes = document.querySelectorAll('button, a');
+    for(var i=0;i<nodes.length;i++){
+      var t = (nodes[i].textContent||'').trim();
+      if(regex.test(t)) return nodes[i];
+    }
+    return null;
   }
 
-  function setMobile(on){
-    if(on){ body.classList.add('rwd-mobile'); }
-    else{ body.classList.remove('rwd-mobile'); }
-    try{ localStorage.setItem('rwd_mobile', on?'1':'0'); }catch(e){}
+  function callCloud(kind){
+    var fn = null;
+    var ns = (window.__fireSnap||{});
+    if(kind==='save'){
+      fn = (typeof ns.saveToFirestore==='function') ? ns.saveToFirestore :
+           (typeof window.saveToFirestore==='function' ? window.saveToFirestore : null);
+    }else{
+      fn = (typeof ns.loadFromFirestore==='function') ? ns.loadFromFirestore :
+           (typeof window.loadFromFirestore==='function' ? window.loadFromFirestore : null);
+    }
+
+    if(typeof fn === 'function'){
+      try{
+        var p = fn();
+        if(p && p.catch){ p.catch(function(err){ show('Firestore 錯誤: '+(err && (err.message||err.code)||err)); }); }
+      }catch(err){ show('Firestore 執行失敗: '+err); }
+      return;
+    }
+
+    // Fallback: try to click existing UI buttons by label
+    if(kind==='save'){
+      var b = findButton(/雲端儲存|雲端保存|雲端寫入|儲存|保存|Save/i);
+      if(b){ b.click(); return; }
+    }else{
+      var b2 = findButton(/雲端讀取|雲端載入|讀取|載入|Load/i);
+      if(b2){ b2.click(); return; }
+    }
+
+    show('找不到 '+(kind==='save'?'saveToFirestore':'loadFromFirestore')+' 函式，且頁面上也沒有相符按鈕可觸發。');
   }
 
-  // Restore prefs
-  try{
-    var z = parseFloat(localStorage.getItem('rwd_zoom')||'1'); if(!isNaN(z)){ setZoom(z); if(range) range.value = z; }
-    var m = localStorage.getItem('rwd_mobile'); if(m!==null){ setMobile(m==='1'); }
-    else if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches){ setMobile(true); }
-  }catch(e){ setZoom(1); }
-
-  if(fabM){
-    fabM.addEventListener('click', function(){ setMobile(!body.classList.contains('rwd-mobile')); });
-  }
-  if(fabZ){
-    fabZ.addEventListener('click', function(){
-      if(!card) return;
-      var show = card.style.display !== 'flex';
-      card.style.display = show ? 'flex' : 'none';
-    });
-  }
-  if(range){
-    range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); });
-  }
-  // hide zoom card on outside click
-  document.addEventListener('click', function(ev){
-    if(card && !card.contains(ev.target) && ev.target !== fabZ){ card.style.display='none'; }
-  }, true);
+  // Wire toolbar buttons if present
+  document.addEventListener('DOMContentLoaded', function(){
+    var bar = document.getElementById('cloudToolbar');
+    if(!bar) return;
+    var s = bar.querySelector('.save');
+    var l = bar.querySelector('.load');
+    if(s) s.addEventListener('click', function(){ callCloud('save'); });
+    if(l) l.addEventListener('click', function(){ callCloud('load'); });
+  });
 })();
 </script>
 
