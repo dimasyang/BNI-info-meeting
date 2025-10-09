@@ -900,16 +900,16 @@ __FIRE_LAST_ROWS = rows;
     const ids = [["saveBtn", saveToFirestore], ["loadBtn", loadFromFirestore]];
     ids.forEach(([id, fn])=>{
       const el=document.getElementById(id);
-      if (el){ el.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); fn().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); }); }
+      if (el){ el.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); fn().catch(err=>showToast("Firestore 錯誤: "+err, "ok")); }); }
     });
     // Fallback by text content
     if (!document.getElementById("saveBtn")){
       const b=[...document.querySelectorAll("button, a")].find(b=>/儲存|保存|Save/i.test(b.textContent||""));
-      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore().catch(err=>showToast("Firestore 錯誤: "+err, "ok")); });
     }
     if (!document.getElementById("loadBtn")){
       const b=[...document.querySelectorAll("button, a")].find(b=>/讀取|載入|Load/i.test(b.textContent||""));
-      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore().catch(err=>showToast("Firestore 錯誤: "+err, "ok")); });
     }
   }
 
