@@ -190,7 +190,18 @@
 .toast small{opacity:.9}
 </style>
 <div id="__toastRoot" aria-live="polite" aria-atomic="true"></div>
-
+<script>
+window.showToast = function(msg, type){
+  try{
+    const root = document.getElementById('__toastRoot'); if(!root) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + (type||'ok');
+    el.innerHTML = msg;
+    root.appendChild(el);
+    setTimeout(()=>{ el.style.transition='opacity .25s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 300); }, 2200);
+  }catch(e){}
+};
+</script>
 
 
 
@@ -280,30 +291,995 @@
 </div>
 </form>
 </dialog>
+<script>
+// === 基本設定 ===
+const DATES = ["10/01","10/08","10/15","10/22","10/29","11/05"]; // 顯示
+const DATE_KEYS = ["2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29","2025-11-05"]; // 存檔
+const STORAGE_KEY = "core-team-traffic-2025-10";
+const MEMBERS_KEY = "core-team-members-2025-10";
 
+let MEMBERS = [
+  { id:1,  name:"徐國華", profession:"中藥包裝設備買賣業" },
+  { id:2,  name:"吳冠璋", profession:"理財規劃保險業" },
+  { id:3,  name:"鐘姵羚", profession:"土地開發業" },
+  { id:4,  name:"李宇晴", profession:"市調業" },
+  { id:5,  name:"陳清玉", profession:"茶製品批發零售" },
+  { id:6,  name:"林佑儒", profession:"蝸牛養殖買賣業" },
+  { id:7,  name:"林彥宏", profession:"米糧商" },
+  { id:8,  name:"陳建宏", profession:"軟包裝客製化工廠" },
+  { id:9,  name:"江誠仲", profession:"海苔批發零售" },
+  { id:10, name:"李朵嫻", profession:"咖啡烘豆業" },
+  { id:11, name:"鍾昆翰", profession:"汽車鍍膜業" },
+  { id:12, name:"徐孝衡", profession:"油品品牌商" },
+  { id:13, name:"吳典蓉", profession:"民事訴訟律師" },
+];
+
+const tbody = document.getElementById('tbody');
+
+// 來賓控制（數字）
+function guestControls(){
+  const wrap = document.createElement('div'); wrap.className = 'guest-wrap';
+  const minus = document.createElement('button'); minus.type='button'; minus.className='guest-step'; minus.textContent='-';
+  const input = document.createElement('input'); input.type='number'; input.className='guest-input'; input.min='0'; input.max='99'; input.value='0';
+  const plus = document.createElement('button'); plus.type='button'; plus.className='guest-step'; plus.textContent='+';
+  const zero = document.createElement('button'); zero.type='button'; zero.className='guest-zero'; zero.textContent='0'; zero.title='歸零';
+  const clamp = ()=>{ let v=parseInt(input.value||'0'); if(isNaN(v)||v<0) v=0; if(v>99) v=99; input.value=String(v); };
+  minus.addEventListener('click', ()=>{ input.value = String(Math.max(0, (parseInt(input.value||'0')||0)-1)); input.dispatchEvent(new Event('input')); });
+  plus.addEventListener('click',  ()=>{ input.value = String(Math.min(99,(parseInt(input.value||'0')||0)+1)); input.dispatchEvent(new Event('input')); });
+  zero.addEventListener('click',  ()=>{ input.value = '0'; input.dispatchEvent(new Event('input')); });
+  input.addEventListener('input', ()=>{ clamp(); updateTotals(); });
+  wrap.append(minus,input,plus,zero);
+  return wrap;
+}
+
+// 狀態＋來賓＋一對一（配對）
+function statusCell(dataKey){
+  const wrap = document.createElement('div'); wrap.className = 'cell-wrap';
+  const btn = document.createElement('button'); btn.className = 'status'; btn.setAttribute('data-date', dataKey); btn.setAttribute('aria-label',''); btn.textContent = ''; btn.title='左鍵：出席/遲到/缺席'; btn.addEventListener('click', ()=> cycle(btn));
+  // 藍色小燈
+  const dot = document.createElement('span'); dot.className='o2o-dot'; btn.appendChild(dot);
+  wrap.appendChild(btn);
+  // 來賓
+  wrap.appendChild(guestControls());
+  // 一對一：配對按鈕 + 顯示 Pill
+  const pill = document.createElement('span'); pill.className='o2o-pill'; pill.textContent='🤝 0'; pill.dataset.count='0';
+  const pair = document.createElement('button'); pair.type='button'; pair.className='pair-btn'; pair.textContent='配對'; pair.dataset.partners='[]';
+  pair.addEventListener('click',()=>openPairDialog(btn, pill));
+  wrap.append(pill, pair);
+  return wrap;
+}
+
+function buildTable(){
+  tbody.innerHTML='';
+  MEMBERS.forEach((m)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td style="text-align:left;white-space:normal">${m.profession}</td>`;
+    DATE_KEYS.forEach(k=>{ const td=document.createElement('td'); td.appendChild(statusCell(k)); tr.appendChild(td); });
+    // 右側 6 欄位佔位
+    for(let i=0;i<6;i++){ const td=document.createElement('td'); tr.appendChild(td); }
+    tbody.appendChild(tr);
+  });
+  buildMatrix();
+}
+
+const STATES=['','🟢','🟡','🔴'];
+function cycle(btn){ const cur=btn.getAttribute('aria-label')||''; const idx=STATES.indexOf(cur); const nxt=STATES[(idx+1)%STATES.length]; btn.setAttribute('aria-label',nxt); btn.textContent=nxt; updateTotals(); }
+
+// === 一對一配對 ===
+const pairDialog=document.getElementById('pairDialog');
+const pairList=document.getElementById('pairList');
+const pairOK=document.getElementById('pairOK');
+const pairTitle=document.getElementById('pairTitle');
+let pairCtx=null; // {btn, pill, ri, di}
+
+function openPairDialog(btn, pill){
+  const cell = btn.closest('td');
+  const tr = cell.closest('tr'); const ri = [...tbody.children].indexOf(tr);
+  const di = [...tr.children].indexOf(cell) - 3; // offset by 3 fixed cols
+  pairCtx = { btn, pill, ri, di };
+  pairTitle.textContent = `${MEMBERS[ri].name}－${DATES[di]} 的一對一對象`;
+  pairList.innerHTML='';
+  MEMBERS.forEach((m,idx)=>{
+    if(idx===ri) return;
+    const row=document.createElement('label'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='8px'; row.style.padding='6px 4px';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.value=String(idx);
+    row.append(cb, document.createTextNode(`${m.id}. ${m.name}｜${m.profession}`));
+    pairList.appendChild(row);
+  });
+  // 套入已選
+  try{
+    const partners = JSON.parse(cell.querySelector('.pair-btn').dataset.partners||'[]');
+    [...pairList.querySelectorAll('input[type="checkbox"]')].forEach(cb=>{ cb.checked = partners.includes(parseInt(cb.value)); });
+  }catch(e){}
+  pairDialog.showModal();
+}
+
+pairOK?.addEventListener('click',()=>{
+  if(!pairCtx) return;
+  const {btn,pill,ri,di} = pairCtx;
+  const cell = btn.closest('td');
+  const chosen = [...pairList.querySelectorAll('input[type="checkbox"]')].filter(i=>i.checked).map(i=>parseInt(i.value));
+  const pairBtn = cell.querySelector('.pair-btn'); pairBtn.dataset.partners = JSON.stringify(chosen);
+  // 更新 pill 顯示與藍燈
+  pill.dataset.count = String(chosen.length);
+  pill.textContent = `🤝 ${chosen.length}`;
+  btn.classList.toggle('o2o', chosen.length>0);
+  updateTotals();
+});
+
+// === 儲存/讀取 ===
+function snapshot(){
+  const rows=[];
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    const cells=tr.querySelectorAll('td');
+    const row={ id: MEMBERS[ri].id };
+    DATE_KEYS.forEach((k,di)=>{
+      const cell=cells[3+di];
+      const b=cell.querySelector('.status');
+      const g=cell.querySelector('.guest-input');
+      const p=cell.querySelector('.pair-btn');
+      const pill=cell.querySelector('.o2o-pill');
+      row[k]=b.getAttribute('aria-label')||'';
+      row[k+'_g']=parseInt(g?.value||'0')||0;
+      try{ row[k+'_p']=JSON.parse(p?.dataset.partners||'[]'); }catch(e){ row[k+'_p']=[]; }
+      row[k+'_1on1']=parseInt(pill?.dataset.count||'0')||0; // 冗餘儲存
+    });
+    rows.push(row);
+  });
+  return rows;
+}
+
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); alert('已儲存到本機。'); }
+
+function load(){
+  const mraw=localStorage.getItem(MEMBERS_KEY); if(mraw){ try{ MEMBERS=JSON.parse(mraw);}catch(e){} }
+  buildTable();
+  const raw=localStorage.getItem(STORAGE_KEY); if(!raw){ updateTotals(); return; }
+  const rows=JSON.parse(raw);
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    const cells=tr.querySelectorAll('td');
+    DATE_KEYS.forEach((k,di)=>{
+      const cell=cells[3+di];
+      const b=cell.querySelector('.status');
+      const g=cell.querySelector('.guest-input');
+      const p=cell.querySelector('.pair-btn');
+      const pill=cell.querySelector('.o2o-pill');
+      const v=rows[ri]?.[k]||''; b.setAttribute('aria-label',v); b.textContent=v;
+      const gval=parseInt(rows[ri]?.[k+'_g'])||0; if(g) g.value=String(gval);
+      const partners=Array.isArray(rows[ri]?.[k+'_p'])? rows[ri][k+'_p'] : []; p.dataset.partners = JSON.stringify(partners);
+      const n = partners.length>0 ? partners.length : (parseInt(rows[ri]?.[k+'_1on1'])||0);
+      pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`;
+      b.classList.toggle('o2o', n>0);
+    });
+    fillRightSummary(tr,ri);
+  });
+  updateTotals();
+}
+
+function clearAll(){
+  if(!confirm('清空所有標記與來賓/一對一？（名單不會被刪除）')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  [...document.querySelectorAll('.status')].forEach(b=>{b.setAttribute('aria-label','');b.textContent='';b.classList.remove('o2o');});
+  [...document.querySelectorAll('.guest-input')].forEach(i=>{i.value='0'});
+  [...document.querySelectorAll('.o2o-pill')].forEach(el=>{el.dataset.count='0'; el.textContent='🤝 0';});
+  [...document.querySelectorAll('.pair-btn')].forEach(p=>{p.dataset.partners='[]'});
+  updateTotals();
+}
+
+// === 匯出 CSV ===
+function exportCSV(){
+  const headers=['編號','姓名','專業別',...DATES,'出席率','來賓總數','帶來賓比率','一對一次數','一對一比率','總體績效'];
+  const lines=[headers.join(',')];
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    const base=[MEMBERS[ri].id, MEMBERS[ri].name, MEMBERS[ri].profession.replaceAll(',','，')];
+    const marks=DATE_KEYS.map((k,di)=>tr.querySelectorAll('td')[3+di].querySelector('.status').textContent);
+    const rate=tr.querySelector('.att-rate')?.textContent||'';
+    const gsum=tr.querySelector('.guest-sum')?.textContent||'';
+    const grate=tr.querySelector('.guest-rate')?.textContent||'';
+    const o2osum=tr.querySelector('.o2o-sum')?.textContent||'';
+    const o2orate=tr.querySelector('.o2o-rate')?.textContent||'';
+    const perf=tr.querySelector('.perf-score')?.textContent||'';
+    lines.push([...base,...marks,rate,gsum,grate,o2osum,o2orate,perf].join(','));
+  });
+  const bom = String.fromCharCode(65279);
+  const blob=new Blob([bom+lines.join('\\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='核心團成員_10-01_11-05.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+// === 統計 ===
+function updateTotals(){
+  // 每日期合計（來賓總和以人數合計；一對一總數以「不重複配對」計）
+  DATE_KEYS.forEach((k,di)=>{
+    let g=0,y=0,r=0,guestSum=0,o2o=0;
+    const seen=new Set(); // unique pair per day
+    [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cell=tr.querySelectorAll('td')[3+di];
+      const btn=cell.querySelector('.status'); const v=btn.textContent;
+      if(v==='🟢') g++; else if(v==='🟡') y++; else if(v==='🔴') r++;
+      guestSum += parseInt(cell.querySelector('.guest-input')?.value||'0')||0;
+      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
+      partners.forEach(pj=>{ const a=Math.min(ri,pj), b=Math.max(ri,pj); const key=`${a}-${b}`; if(!seen.has(key)){ seen.add(key); o2o++; } });
+    });
+    const wrap=document.querySelector(`.totals[data-date="${k}"]`);
+    wrap.innerHTML=`<span class="dot">🟢 ${g}</span> <span class="dot">🟡 ${y}</span> <span class="dot">🔴 ${r}</span> <span class="dot">👥 ${guestSum}</span> <span class="dot">🤝 ${o2o}</span>`;
+  });
+  // 列統計
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>fillRightSummary(tr,ri));
+  // 矩陣
+  buildMatrix();
+}
+
+function fillRightSummary(tr,ri){
+  const cells=tr.querySelectorAll('td'); let present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
+  DATE_KEYS.forEach((k,di)=>{
+    const cell=cells[3+di]; const v=cell.querySelector('.status').textContent;
+    if(v==='🟢'||v==='🟡'){ present++; }
+    const g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
+    const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
+  });
+  const total=DATE_KEYS.length; const attRate= total? Math.round((present/total)*1000)/10 : 0; const guestRate= present? Math.round((guestDays/present)*1000)/10 : 0; const o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0; const perf=Math.round((0.5*attRate + 0.25*guestRate + 0.25*o2oRate)*10)/10; const base=3+DATE_KEYS.length; const vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%']; for(let i=0;i<6;i++){ const td=tr.querySelectorAll('td')[base+i]; td.textContent=vals[i]; td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i]; }
+}
+
+// === 矩陣 ===
+function buildMatrix(){
+  const tbl=document.getElementById('matrix'); if(!tbl) return;
+  const seenPerDay = DATE_KEYS.map(()=>new Set());
+  const count=Array.from({length:MEMBERS.length},()=>Array(MEMBERS.length).fill(0));
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    DATE_KEYS.forEach((k,di)=>{
+      const cell=tr.querySelectorAll('td')[3+di];
+      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
+      partners.forEach(pj=>{
+        const a=Math.min(ri,pj), b=Math.max(ri,pj);
+        const key=`${a}-${b}`;
+        if(!seenPerDay[di].has(key)){ seenPerDay[di].add(key); count[a][b]++; count[b][a]++; }
+      });
+    });
+  });
+  let html='<thead><tr><th>Name</th>';
+  MEMBERS.forEach(m=> html+=`<th>${m.name}</th>`);
+  html+='</tr></thead><tbody>';
+  MEMBERS.forEach((m,i)=>{
+    html+=`<tr><th>${m.name}</th>`;
+    MEMBERS.forEach((n,j)=>{
+      if (i === j) { html += '<td class="diag"></td>'; } else { const val = count[i][j] || 0; const cls = val > 0 ? ' class="lit"' : ''; html += `<td${cls}>${val}</td>`; }
+    });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  tbl.innerHTML=html;
+}
+
+// === 搜尋 ===
+const q=document.getElementById('q');
+q.addEventListener('input',()=>{
+  const term=q.value.trim();
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    const hit=!term || (MEMBERS[ri]?.name||'').includes(term) || (MEMBERS[ri]?.profession||'').includes(term);
+    tr.style.display=hit? '':'none';
+  });
+});
+
+// === 匯入成員 ===
+const importDialog=document.getElementById('importDialog'); const importBtn=document.getElementById('importBtn'); const doImport=document.getElementById('doImport'); const importText=document.getElementById('importText');
+importBtn.addEventListener('click',()=>{ importText.value='1,徐國華,中藥包裝設備買賣業\\n2,吳冠璋,理財規劃保險業\\n3,鐘姵羚,土地開發業\\n4,李宇晴,市調業\\n5,陳清玉,茶製品批發零售\\n6,林佑儒,蝸牛養殖買賣業\\n7,林彥宏,米糧商\\n8,陳建宏,軟包裝客製化工廠\\n9,江誠仲,海苔批發零售\\n10,李朵嫻,咖啡烘豆業\\n11,鍾昆翰,汽車鍍膜業\\n12,徐孝衡,油品品牌商\\n13,吳典蓉,民事訴訟律師'; importDialog.showModal(); });
+doImport.addEventListener('click',()=>{ const lines=importText.value.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean); const parsed=[]; for(const ln of lines){ const parts=ln.split(/\\t|\\s*,\\s*/); if(parts.length>=3){ const id=Number(parts[0])||parsed.length+1; parsed.push({id,name:parts[1],profession:parts.slice(2).join(' ')}); } } if(parsed.length){ MEMBERS=parsed; localStorage.setItem(MEMBERS_KEY, JSON.stringify(MEMBERS)); buildTable(); updateTotals(); importDialog.close(); } else { alert('未偵測到可用資料，請確認每列有：編號,姓名,專業別'); } });
+
+// === 列印 ===
+function printPage(){ window.print(); }
+
+// 初始化
+buildTable(); updateTotals();
+document.getElementById('saveBtn').addEventListener('click', save);
+document.getElementById('loadBtn').addEventListener('click', load);
+document.getElementById('clearBtn').addEventListener('click', clearAll);
+document.getElementById('csvBtn').addEventListener('click', exportCSV);
+document.getElementById('printBtn').addEventListener('click', printPage);
+</script>
 
 <!-- Firebase CDN (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+/* === Firestore Sync v2 (robust id + hooks + diagnostics) === */
+(function(){
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDZYbqfz-A5BcpKmO_TO8ot5AAp4bUeTE",
+    authDomain: "bni-info-meeting.firebaseapp.com",
+    projectId: "bni-info-meeting",
+    storageBucket: "bni-info-meeting.firebasestorage.app",
+    messagingSenderId: "943878549247",
+    appId: "1:943878549247:web:a1ab47cbf589e3b1ab26ca",
+    measurementId: "G-P2QGJ52GKW"
+  };
+  try{ firebase.initializeApp(firebaseConfig); }catch(e){}
+  try{ firebase.analytics(); }catch(e){}
+  const db = firebase.firestore();
+  const SNAP_COLL = "trafficSnapshots";
+  // Map helper: given row object + date index, resolve base key and value
+  function mapRowKeysDual(rowObj, di){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const dispKey = DK[di];           // e.g., "10/01"
+    const isoKey  = DS[di];           // e.g., "2025-10-01"
+    if (rowObj && typeof rowObj==='object'){
+      if (dispKey && (dispKey in rowObj)) return {key: dispKey, val: rowObj[dispKey]};
+      if (isoKey && (isoKey in rowObj))   return {key: isoKey,  val: rowObj[isoKey]};
+      // try MM/DD -> ISO by borrowing year from DS[di]
+      if (dispKey && /\d{2}\/\d{2}/.test(dispKey)){
+        try{
+          const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+          const iso2 = y + "-" + dispKey.replace(/\//g,"-");
+          if (iso2 in rowObj) return {key: iso2, val: rowObj[iso2]};
+        }catch(e){}
+      }
+    }
+    return {key: dispKey||isoKey, val: ""};
+  }
+
+  // After cloud load, fill table using dual-key and (optionally) sync missing MM/DD fields back to Firestore
+  async function autoSyncMMDDIfNeeded(rows){
+    try{
+      const DK = (window.DATE_KEYS||[]);
+      const DS = (window.DATES||[]);
+      if (!Array.isArray(rows) || !DK.length || !DS.length) return;
+      // Build newRows with MM/DD filled from ISO when missing; do not overwrite existing MM/DD values
+      const newRows = rows.map((row)=>{
+        const r = Object.assign({}, row||{});
+        for (let di=0; di<DK.length; di++){
+          const dispKey = DK[di];
+          const isoKey  = DS[di];
+          if (!dispKey) continue;
+          const copy = (src, dst) => {
+            if (r[src] != null && r[src] !== "" && (r[dst] == null || r[dst] === "")) r[dst] = r[src];
+          };
+          copy(isoKey, dispKey);
+          copy(isoKey + "_g", dispKey + "_g");
+          copy(isoKey + "_1on1", dispKey + "_1on1");
+          if (Array.isArray(r[isoKey + "_p"]) && (!Array.isArray(r[dispKey + "_p"]) || r[dispKey + "_p"].length === 0)){
+            r[dispKey + "_p"] = r[isoKey + "_p"];
+          }
+        }
+        return r;
+      });
+      // If nothing changed, skip write
+      let changed = false;
+      for (let i=0;i<rows.length;i++){
+        const a = rows[i]||{}, b = newRows[i]||{};
+        if (JSON.stringify(a) !== JSON.stringify(b)){ changed = true; break; }
+      }
+      if (changed){
+        const snapId = getSnapId();
+        await db.collection(SNAP_COLL).doc(snapId).set({ rows: newRows }, { merge: true });
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(newRows)); }catch(e){}
+        if (window.showToast) window.showToast("已自動補齊 MM/DD 欄位並同步到雲端", "ok");
+        // update in-memory cache too
+        window.__FIRE_LAST_ROWS = newRows;
+        return newRows;
+      }
+      return rows;
+    }catch(e){
+      if (window.showToast) window.showToast("自動補齊 MM/DD 失敗：" + e, "err");
+      return rows;
+    }
+  }
+  // Wait until matrix/table is ready, then apply rows (avoid early apply on empty DOM)
+  function waitForMatrixAndApply(rows){
+    try{
+      const start = Date.now();
+      const limit = 6000; // up to 6s
+      const tick = 160;   // check every 160ms
+      function ready(){
+        return document.getElementById('tbody') || document.querySelector('#matrix table');
+      }
+      if (ready()){
+        try{ applyRows(rows); }catch(e){}
+        return;
+      }
+      const tm = setInterval(()=>{
+        if (ready() || (Date.now() - start > limit)){
+          clearInterval(tm);
+          try{ applyRows(rows); }catch(e){}
+        }
+      }, tick);
+    }catch(e){}
+  }
+  function hardTakeover(rows){
+    try{
+      if (rows){
+        window.__FIRE_LAST_ROWS = rows;
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+      }
+      // Permanently tame legacy window.load: always re-apply cloud rows if invoked
+      (function(){
+        const orig = typeof window.load === "function" ? window.load : null;
+        window.load = function(){
+          try{ if (window.__FIRE_LAST_ROWS && typeof applyRows === "function"){ applyRows(window.__FIRE_LAST_ROWS); return; } }catch(e){}
+          if (orig) return orig.apply(this, arguments);
+        };
+      })();
+      // Replace #loadBtn / [data-action=load] with clean clones that only trigger cloud
+      const sels = ["#loadBtn","[data-action=load]"];
+      sels.forEach(sel=>{
+        document.querySelectorAll(sel).forEach(btn=>{
+          try{
+            const c = btn.cloneNode(true);
+            btn.replaceWith(c);
+            c.addEventListener("click", function(ev){ ev.preventDefault(); ev.stopImmediatePropagation(); loadFromFirestore(); }, true);
+          }catch(e){}
+        });
+      });
+    }catch(e){}
+  }
+  // Aggressive keep-on-screen: repeatedly re-apply for a short window and suppress legacy handlers
+  function cloudHold(rows){
+    try{
+      if (!rows) return;
+      window.__FIRE_LAST_ROWS = rows;
+      // 1) keep localStorage in sync
+      try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+      // 2) disable legacy window.load temporarily
+      const origLoad = typeof window.load === "function" ? window.load : null;
+      if (origLoad){ window.load = function(){}; setTimeout(()=>{ window.load = origLoad; }, 12000); }
+      // 3) global capture to stop other click/change handlers that might overwrite
+      const blocker = function(e){ e.stopImmediatePropagation(); };
+      const evs = ["click","change","input"];
+      evs.forEach(ev=>document.addEventListener(ev, blocker, true));
+      setTimeout(()=>{ evs.forEach(ev=>document.removeEventListener(ev, blocker, true)); }, 3000);
+      // 4) aggressive reapply loop for 3s
+      const t0 = Date.now();
+      (function loop(){
+        try{
+          if (Date.now() - t0 > 3000) return;
+          if (typeof applyRows === "function") applyRows(rows);
+        }catch(e){}
+        setTimeout(loop, 120);
+      })();
+      // 5) also watch DOM rebuilds for 6s
+      try{
+        const stopAt = Date.now() + 6000;
+        const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+        if (target){
+          let tm=null;
+          const ob = new MutationObserver(()=>{
+            if (Date.now()>stopAt){ ob.disconnect(); return; }
+            clearTimeout(tm);
+            tm = setTimeout(()=>{ try{ applyRows(rows); }catch(e){} }, 40);
+          });
+          ob.observe(target, {childList:true, subtree:true});
+          setTimeout(()=>ob.disconnect(), 6200);
+        }
+      }catch(e){}
+    }catch(e){}
+  }
+  function sealCloudRows(rows){
+    try{
+      if (rows) {
+        try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+        window.__FIRE_LAST_ROWS = rows;
+      }
+      const WINDOW_MS = 15000; // 15s hard-protect window
+      const started = Date.now();
+
+      // 1) Temporarily prefer cloud rows via localStorage getter
+      try{
+        const LS = window.localStorage;
+        const nativeGet = LS.getItem.bind(LS);
+        LS.getItem = function(k){
+          try{
+            if (k === window.STORAGE_KEY && window.__FIRE_LAST_ROWS && Date.now()-started < WINDOW_MS){
+              return JSON.stringify(window.__FIRE_LAST_ROWS);
+            }
+          }catch(e){}
+          return nativeGet(k);
+        };
+        setTimeout(()=>{ try{ LS.getItem = nativeGet; }catch(e){} }, WINDOW_MS+200);
+      }catch(e){}
+
+      // 2) Wrap window.load() to avoid wiping cloud data
+      (function(){
+        const orig = typeof window.load === "function" ? window.load : null;
+        window.load = function(){
+          try{
+            if (window.__FIRE_LAST_ROWS && Date.now()-started < WINDOW_MS){
+              if (typeof applyRows === "function") applyRows(window.__FIRE_LAST_ROWS);
+              return; // block legacy local overwrite
+            }
+          }catch(e){}
+          if (orig) return orig.apply(this, arguments);
+        };
+        setTimeout(()=>{ if (orig) window.load = orig; }, WINDOW_MS+200);
+      })();
+
+      // 3) Re-apply after table rebuilds within window
+      (function(){
+        const stopAt = Date.now() + WINDOW_MS;
+        const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+        if (!target) return;
+        let t=null;
+        const ob = new MutationObserver(()=>{
+          if (Date.now() > stopAt) { ob.disconnect(); return; }
+          if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+            clearTimeout(t);
+            t = setTimeout(()=>{ try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }, 40);
+          }
+        });
+        ob.observe(target, {childList:true, subtree:true});
+        setTimeout(()=>ob.disconnect(), WINDOW_MS+300);
+      })();
+    }catch(e){}
+  }
+
+  function getSnapId(){ return "core-team-traffic-v3"; }catch(e){}
+    const sk = (window.STORAGE_KEY || "core-team-traffic");
+    return sk + "-v3";
+  }
+  function setSnapId(id){ try{ localStorage.setItem("FIRE_SNAP_ID", id); }catch(e){} }
+  function getSnapshot(){ if (typeof snapshot === 'function') return snapshot(); return null; }
+
+  var __FIRE_LAST_ROWS=null;
+function applyRows(rows){
+__FIRE_LAST_ROWS = rows;
+    const tbody = document.getElementById('tbody');
+    if (!tbody) return;
+    if (typeof buildTable === 'function') buildTable();
+    const DATE_KEYS = window.DATE_KEYS || [];
+    [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells=tr.querySelectorAll('td');
+      DATE_KEYS.forEach((k,di)=>{
+        const cell=cells[3+di];
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const v=rows[ri]?.[k]||''; b.setAttribute('aria-label',v); b.textContent=v;
+        const gval=parseInt(rows[ri]?.[k+'_g'])||0; if(g) g.value=String(gval);
+        const partners=Array.isArray(rows[ri]?.[k+'_p'])? rows[ri][k+'_p'] : []; p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt(rows[ri]?.[k+'_1on1'])||0);
+        pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`;
+        b.classList.toggle('o2o', n>0);
+      });
+      if (typeof fillRightSummary === 'function') fillRightSummary(tr,ri);
+    });
+    if (typeof updateTotals === 'function') updateTotals();
+  }
+
+  async function saveToFirestore(){
+    const rows = getSnapshot();
+    if (!rows){ showToast("無法擷取快照：snapshot() 不存在。", "ok"); return; }
+    const snapId = getSnapId();
+    const payload = {
+      rows,
+      members: (window.MEMBERS || []),
+      dateKeys: (window.DATE_KEYS || []),
+      dates: (window.DATES || []),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      note: "saved from v3.2 locked tidy page"
+    };
+    await db.collection(SNAP_COLL).doc(snapId).set(payload, { merge: true });
+    try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+    setSnapId(snapId);
+    showToast("✅ 已存到 Firestore\n路徑: " + SNAP_COLL + "/" + snapId, "ok");
+  }
+
+  async function loadFromFirestore(){
+    const snapId = getSnapId();
+    const docRef = db.collection(SNAP_COLL).doc(snapId);
+    const doc = await docRef.get();
+    if (doc.exists){
+      try{ showToast("已連線到 Firestore："+SNAP_COLL+"/"+getSnapId(), "ok"); }catch(e){}
+      const data = doc.data() || {};
+      if (Array.isArray(data.members) && data.members.length){
+        try{ window.MEMBERS = data.members; localStorage.setItem(window.MEMBERS_KEY, JSON.stringify(window.MEMBERS)); }catch(e){}
+      }
+      if (Array.isArray(data.rows)){
+        applyRows(data.rows);
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(data.rows)); }catch(e){}
+        // Re-apply once if table gets rebuilt shortly after
+        (function(){
+          var once=true; var t0=Date.now();
+          var tbody=document.getElementById('tbody'); if(!tbody) return;
+          var mo=new MutationObserver(function(){
+            if(once && Date.now()-t0<3000 && __FIRE_LAST_ROWS){ applyRows(__FIRE_LAST_ROWS); once=false; mo.disconnect(); }
+          });
+          mo.observe(tbody.parentElement||document.body,{childList:true,subtree:true});
+          setTimeout(function(){ try{ mo.disconnect(); }catch(e){} }, 3500);
+        })();
+        showToast("✅ 已從 Firestore 讀取\n路徑: " + SNAP_COLL + "/" + snapId, "ok");
+        return;
+      }
+      showToast("⚠️ 雲端文件存在，但 rows 欄位是空的。", "ok");
+    }else{
+      showToast("⚠️ 找不到雲端文件: " + SNAP_COLL + "/" + snapId + "\n將回退讀本機。", "ok");
+      if (typeof load === 'function'){ load(); }
+    }
+  }
+
+  function hookButtons(){
+    const ids = [["saveBtn", saveToFirestore], ["loadBtn", loadFromFirestore]];
+    ids.forEach(([id, fn])=>{
+      const el=document.getElementById(id);
+      if (el){ el.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); fn().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); }); }
+    });
+    // Fallback by text content
+    if (!document.getElementById("saveBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/儲存|保存|Save/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+    }
+    if (!document.getElementById("loadBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/讀取|載入|Load/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){ setTimeout(hookButtons, 500); });
+
+  window.__fireSnap = { saveToFirestore, loadFromFirestore };
+  // Guard: neutralize legacy handlers on load/save buttons by cloning them once at DOM ready
+  document.addEventListener("DOMContentLoaded", function(){
+    ["#saveBtn","[data-action=save]","#loadBtn","[data-action=load]"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(btn=>{
+        try{
+          const c = btn.cloneNode(true);
+          btn.replaceWith(c);
+          if (sel.includes("save")) c.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore(); }, true);
+          if (sel.includes("load")) c.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore(); }, true);
+        }catch(e){}
+      });
+    });
+  });
+  // Guard: if user clicked "讀取" for cloud, neutralize legacy load() briefly
+  (function(){
+    const origLoad = typeof window.load === "function" ? window.load : null;
+    document.addEventListener("click", function(e){
+      const t = e.target;
+      if (!t) return;
+      if (t.closest && (t.closest("#loadBtn") || t.closest("[data-action='load']"))) {
+        try{ window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now(); }catch(e){}
+        if (origLoad){
+          window.load = function(){ /* blocked during cloud intent */ };
+          setTimeout(()=>{ window.load = origLoad; }, 15000);
+        }
+      }
+    }, true);
+  })();
+})();
+</script>
+<script>
+(function(){
+  const btn=document.getElementById("forceApplyBtn");
+  if(!btn) return;
+  btn.addEventListener("click", function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      const rows = window.__FIRE_LAST_ROWS;
+      if (!rows){ return window.showToast ? showToast("沒有可套用的雲端 rows", "warn") : null; }
+      if (!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+      if (typeof window.applyRows==='function'){ applyRows(rows); }
+      if (window.showToast) showToast("已強制套用雲端 rows", "ok");
+    }catch(err){
+      if (window.showToast) showToast("強制套用失敗：" + err, "err");
+    }
+  }, true);
+})();
+</script>
 
 
 
+<script>
+/* === CloudRead Stabilizer v1 === */
+(function(){
+  // Set intent when clicking "讀取/載入/Load" buttons
+  function markIntent(){
+    window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now();
+  }
+  document.addEventListener("DOMContentLoaded", function(){
+    // ID-based
+    ["#loadBtn","[data-action='load']"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>{
+        el.addEventListener("click", markIntent, true);
+      });
+    });
+    // Text fallback
+    Array.from(document.querySelectorAll("button,a")).forEach(el=>{
+      if (/讀取|載入|Load/i.test(el.textContent||"")) {
+        el.addEventListener("click", markIntent, true);
+      }
+    });
+  });
+
+  // Patch applyRows to capture latest rows and persist to localStorage when intent is set
+  (function(){
+    const prev = window.applyRows;
+    if (typeof prev === "function"){
+      window.applyRows = function(rows){
+        try {
+          window.__FIRE_LAST_ROWS = rows;
+          if (window.__FIRE_FROM_CLOUD_INTENT_AT && Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < 8000) {
+            try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+            startReapplyWatcher();
+          }
+        } catch(e) {}
+        return prev.apply(this, arguments);
+      };
+    }
+  })();
+
+  // For a short window, prefer cloud rows over localStorage when someone reads STORAGE_KEY
+  (function(){
+    try{
+      const LS = window.localStorage;
+      if (!LS) return;
+      const nativeGet = LS.getItem.bind(LS);
+      LS.getItem = function(k){
+        try{
+          if (k === window.STORAGE_KEY &&
+              window.__FIRE_LAST_ROWS &&
+              window.__FIRE_FROM_CLOUD_INTENT_AT &&
+              Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < 8000){
+            return JSON.stringify(window.__FIRE_LAST_ROWS);
+          }
+        }catch(e){}
+        return nativeGet(k);
+      };
+    }catch(e){}
+  })();
+
+  // Observe table rebuild shortly after cloud load and re-apply once
+  window.startReapplyWatcher = function(){
+    try{
+      const stopAt = Date.now() + 4000;
+      const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+      if (!target) return;
+      const ob = new MutationObserver(()=>{
+        if (Date.now() > stopAt) { ob.disconnect(); return; }
+        if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+          try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){}
+        }
+      });
+      ob.observe(target, {childList:true, subtree:true});
+      setTimeout(()=>ob.disconnect(), 4200);
+    }catch(e){}
+  };
+})();
+</script>
 
 
+<script>
+/* === Edit Gate v1 (default read-only; password to edit) === */
+(function(){
+  // Config
+  const PASS = "2614";
+  const ALLOW_SELECTORS = [
+    "#loadBtn", "[data-action='load']",
+    "#saveBtn", "[data-action='save']",
+    "#editToggleBtn", "#editBar *",
+    "a[href]", "details", "summary"
+  ];
+
+  // State
+  let editing = false;
+  function isAllowed(target){
+    return ALLOW_SELECTORS.some(sel => target.closest(sel));
+  }
+
+  // Intercept interactions: if not editing, block actions inside matrix & form controls
+  const blockSelectors = "input, textarea, select, button, [contenteditable], #matrix, #matrix *";
+  function gateHandler(e){
+    if (editing) return;
+    const t = e.target;
+    if (!t) return;
+    if (isAllowed(t)) return; // allow load/save/edit buttons
+    if (t.closest(blockSelectors)){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  ["click","dblclick","mousedown","pointerdown","keydown","input","change","touchstart"].forEach(ev=>{
+    document.addEventListener(ev, gateHandler, true);
+  });
+
+  // Toggle edit with password
+  const btn = document.getElementById("editToggleBtn");
+  function refreshUI(){
+    btn.classList.toggle("on", editing);
+    btn.textContent = editing ? "編輯中" : "編輯";
+    document.documentElement.classList.toggle("editing", editing);
+  }
+  btn.addEventListener("click", ()=>{
+    if (!editing){
+      const v = window.prompt("");
+      if (v === PASS){ editing = true; refreshUI(); }
+    }else{
+      editing = false; refreshUI();
+    }
+  });
+  refreshUI();
+})();
+</script>
 
 
+<script>
+/* === CloudRead Stabilizer v1.2 (longer window + force re-apply) === */
+(function(){
+  const WINDOW_MS = 12000; // 12s window to resist overwrites
+
+  function markIntent(){ window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now(); }
+  document.addEventListener("DOMContentLoaded", function(){
+    ["#loadBtn","[data-action='load']"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>el.addEventListener("click", markIntent, true));
+    });
+    Array.from(document.querySelectorAll("button,a")).forEach(el=>{
+      if (/讀取|載入|Load/i.test(el.textContent||"")) el.addEventListener("click", markIntent, true);
+    });
+  });
+
+  // Patch applyRows to cache rows & persist to local when cloud intent exists
+  (function(){
+    const prev = window.applyRows;
+    if (typeof prev === "function"){
+      window.applyRows = function(rows){
+        try {
+          window.__FIRE_LAST_ROWS = rows;
+          if (window.__FIRE_FROM_CLOUD_INTENT_AT && Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < WINDOW_MS) {
+            try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+            startReapplyWatcher();
+          }
+        } catch(e) {}
+        return prev.apply(this, arguments);
+      };
+    }
+  })();
+
+  // Shim localStorage.getItem to prefer cloud rows during the window
+  (function(){
+    try{
+      const LS = window.localStorage;
+      if (!LS) return;
+      const nativeGet = LS.getItem.bind(LS);
+      LS.getItem = function(k){
+        try{
+          if (k === window.STORAGE_KEY &&
+              window.__FIRE_LAST_ROWS &&
+              window.__FIRE_FROM_CLOUD_INTENT_AT &&
+              Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < WINDOW_MS){
+            return JSON.stringify(window.__FIRE_LAST_ROWS);
+          }
+        }catch(e){}
+        return nativeGet(k);
+      };
+    }catch(e){}
+  })();
+
+  // Re-apply rows if DOM rebuilds shortly after cloud read
+  window.startReapplyWatcher = function(){
+    try{
+      const stopAt = Date.now() + 6000;
+      const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+      if (!target) return;
+      let t=null;
+      const ob = new MutationObserver(()=>{
+        if (Date.now() > stopAt) { ob.disconnect(); return; }
+        if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+          clearTimeout(t);
+          t = setTimeout(()=>{ try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }, 40);
+        }
+      });
+      ob.observe(target, {childList:true, subtree:true});
+      setTimeout(()=>ob.disconnect(), 6200);
+    }catch(e){}
+  };
+})();
+</script>
 
 
+<script>
+/* === applyRows override: dual key (MM/DD & ISO) mapper === */
+(function(){
+  const prev = window.applyRows;
+  window.applyRows = function(rows){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const tbody = document.getElementById('tbody');
+    if (!tbody && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    [...(document.getElementById('tbody')||{querySelectorAll:()=>[]}).querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells = tr.querySelectorAll('td');
+      DK.forEach((k,di)=>{
+        const cell=cells[3+di]; if(!cell) return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const rowObj = rows && rows[ri] || {};
+        // resolve key
+        const dispKey = DK[di];
+        const isoKey  = DS[di];
+        let baseKey = null;
+        if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, dispKey)) baseKey = dispKey;
+        else if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, isoKey)) baseKey = isoKey;
+        else if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+          try{
+            const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+            const iso2 = y + "-" + String(dispKey).replace(/\//g,"-");
+            if (Object.prototype.hasOwnProperty.call(rowObj, iso2)) baseKey = iso2;
+          }catch(e){}
+        }
+        if (!baseKey) baseKey = dispKey || isoKey || "";
+        // values
+        const v = rowObj[baseKey] || "";
+        if (b){ b.setAttribute('aria-label', v); b.textContent = v; }
+        const gval = parseInt(rowObj[baseKey + '_g']) || 0; if (g) g.value = String(gval);
+        const partners = Array.isArray(rowObj[baseKey + '_p']) ? rowObj[baseKey + '_p'] : [];
+        if (p) p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt(rowObj[baseKey + '_1on1'])||0);
+        if (pill){ pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`; }
+        if (b) b.classList.toggle('o2o', n>0);
+      });
+      if (typeof window.fillRightSummary === 'function') try{ fillRightSummary(tr,ri); }catch(e){}
+    });
+    if (typeof window.updateTotals === 'function') try{ updateTotals(); }catch(e){}
+    return rows;
+  };
+  // If there is a cached cloud rows, apply once
+  if (window.__FIRE_LAST_ROWS){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }
+})();
+</script>
 
 
-
-
-
-
-
-
-
-
-
-
+<script>
+/* === applyRows override: dual key (MM/DD & ISO) mapper === */
+(function(){
+  const prev = window.applyRows;
+  window.applyRows = function(rows){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const tbody = document.getElementById('tbody');
+    if (!tbody && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    const TB = document.getElementById('tbody');
+    if (!TB) return rows;
+    [...TB.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells = tr.querySelectorAll('td');
+      DK.forEach((_,di)=>{
+        const cell=cells[3+di]; if(!cell) return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const rowObj = rows && rows[ri] || {};
+        // dual-key resolve
+        const got = (function(){
+          const dispKey = DK[di];
+          const isoKey  = DS[di];
+          if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, dispKey)) return {key: dispKey, val: rowObj[dispKey]};
+          if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, isoKey))  return {key: isoKey,  val: rowObj[isoKey]};
+          if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+            try{
+              const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+              const iso2 = y + "-" + String(dispKey).replace(/\//g,"-");
+              if (Object.prototype.hasOwnProperty.call(rowObj, iso2)) return {key: iso2, val: rowObj[iso2]};
+            }catch(e){}
+          }
+          return {key: dispKey||isoKey, val: ""};
+        })();
+        const baseKey = got.key;
+        const v = got.val || "";
+        if (b){ b.setAttribute('aria-label', v); b.textContent = v; }
+        const gval = parseInt((rowObj||{})[baseKey + '_g']) || 0; if (g) g.value = String(gval);
+        const partners = Array.isArray((rowObj||{})[baseKey + '_p']) ? (rowObj||{})[baseKey + '_p'] : [];
+        if (p) p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt((rowObj||{})[baseKey + '_1on1'])||0);
+        if (pill){ pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`; }
+        if (b) b.classList.toggle('o2o', n>0);
+      });
+      if (typeof window.fillRightSummary === 'function') try{ fillRightSummary(tr,ri); }catch(e){}
+    });
+    if (typeof window.updateTotals === 'function') try{ updateTotals(); }catch(e){}
+    return rows;
+  };
+})();
+</script>
 
 <!-- === Cloud Debug Panel + Fixed DocId + Force Apply === -->
 <style>
@@ -327,132 +1303,309 @@
   <div class="row"><span></span><button id="cd_force">強制套用雲端</button></div>
   <pre id="cd_preview">（成功讀取後會顯示前1筆內容）</pre>
 </div>
-
+<script>
+/* —— 小工具 —— */
+function showToast(m,t){try{const r=document.getElementById("__toastRoot");const e=document.createElement("div");e.className="toast "+(t||"ok");e.innerHTML=m;r.appendChild(e);setTimeout(()=>{e.style.transition="opacity .25s";e.style.opacity="0";setTimeout(()=>e.remove(),260)},2200)}catch(e){}}
+function __setTxt(id,val){const el=document.getElementById(id); if(el) el.textContent=String(val);}
+function __keys(o){try{return Object.keys(o||{}).slice(0,8).join(", ");}catch(e){return "-";}}
+function __pretty(o){try{return JSON.stringify(o,null,2);}catch(e){return String(o);}}
+function __hasRows(rows){if(!Array.isArray(rows))return false;for(let i=0;i<rows.length;i++){if(rows[i]&&Object.keys(rows[i]).length)return true}return false;}
+window.__showCloudDiag=function(rows,path){
+  __setTxt('cd_path', path||'trafficSnapshots/core-team-traffic-v3');
+  __setTxt('cd_len', Array.isArray(rows)? rows.length : '非陣列');
+  __setTxt('cd_has', __hasRows(rows)? '是' : '否');
+  __setTxt('cd_keys', Array.isArray(rows)&&rows[0]? __keys(rows[0]) : '-');
+  const pv=document.getElementById('cd_preview');
+  if(pv) pv.textContent = Array.isArray(rows)&&rows[0]? __pretty(rows[0]) : '（沒有可顯示的內容）';
+};
+/* 固定 docId：trafficSnapshots/core-team-traffic-v3 */
+(function(){
+  if(typeof getSnapId!=="function"){
+    window.getSnapId=function(){ return "core-team-traffic-v3"; };
+  }else{
+    const _g=getSnapId; window.getSnapId=function(){ try{return "core-team-traffic-v3";}catch(e){return _g();} };
+  }
+})();
+/* MM/DD 與 ISO 互通的 applyRows 覆寫（保證能吃到 2025-10-01 或 10/01） */
+(function(){
+  const prev=window.applyRows;
+  window.applyRows=function(rows){
+    const DK=window.DATE_KEYS||[];   // 10/01
+    const DS=window.DATES||[];       // 2025-10-01
+    if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    const TB=document.getElementById('tbody'); if(!TB) return rows;
+    [...TB.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells=tr.querySelectorAll('td');
+      DK.forEach((dispKey,di)=>{
+        const isoKey=DS[di]; const cell=cells[3+di]; if(!cell)return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const row=rows && rows[ri] || {};
+        let baseKey=null;
+        if(Object.prototype.hasOwnProperty.call(row, dispKey)) baseKey=dispKey;
+        else if(Object.prototype.hasOwnProperty.call(row, isoKey)) baseKey=isoKey;
+        else if(/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+          const y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+          const iso2=y+"-"+String(dispKey).replace(/\//g,"-");
+          if(Object.prototype.hasOwnProperty.call(row, iso2)) baseKey=iso2;
+        }
+        if(!baseKey) baseKey=dispKey||isoKey||"";
+        const v=row[baseKey] || ""; if(b){ b.setAttribute('aria-label',v); b.textContent=v; }
+        const gval=parseInt(row[baseKey+'_g'])||0; if(g) g.value=String(gval);
+        const partners=Array.isArray(row[baseKey+'_p'])? row[baseKey+'_p'] : [];
+        if(p) p.dataset.partners=JSON.stringify(partners);
+        const n=partners.length>0? partners.length : (parseInt(row[baseKey+'_1on1'])||0);
+        if(pill){ pill.dataset.count=String(n); pill.textContent=`🤝 ${n}`; }
+        if(b) b.classList.toggle('o2o', n>0);
+      });
+      if(typeof window.fillRightSummary==='function'){ try{ fillRightSummary(tr,ri); }catch(e){} }
+    });
+    if(typeof window.updateTotals==='function'){ try{ updateTotals(); }catch(e){} }
+    return rows;
+  };
+  if(prev && window.__FIRE_LAST_ROWS){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }
+})();
+/* 綁定「雲端儲存/讀取」：確保走 Firestore (__fireSnap) */
+(function(){
+  function bind(btn, fn){
+    if(!btn || !fn) return;
+    const c=btn.cloneNode(true); btn.replaceWith(c);
+    c.addEventListener('click', function(e){
+      e.preventDefault(); e.stopImmediatePropagation();
+      try{ const p=fn(); if(p && p.catch){ p.catch(err=>showToast("Firestore 錯誤："+err,"err")); } }
+      catch(err){ showToast("Firestore 執行失敗："+err,"err"); }
+    }, true);
+  }
+  function tryBind(){
+    const s=document.getElementById('saveBtn');
+    const l=document.getElementById('loadBtn');
+    const snap=window.__fireSnap;
+    if(!snap) return false;
+    if(s) bind(s, snap.saveToFirestore || snap.save);
+    if(l) bind(l, snap.loadFromFirestore || snap.load);
+    return !!(s||l);
+  }
+  let t=0, iv=setInterval(()=>{ t++; if(tryBind()||t>40) clearInterval(iv); }, 200);
+  try{
+    const ob=new MutationObserver(()=>tryBind());
+    ob.observe(document.body, {childList:true, subtree:true});
+    setTimeout(()=>ob.disconnect(), 20000);
+  }catch(e){}
+})();
+/* 讀取後更新診斷面板 + 強制套用鈕 */
+(function(){
+  const btn=document.getElementById('cd_force');
+  if(btn) btn.addEventListener('click', function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      const rows=window.__FIRE_LAST_ROWS;
+      if(!rows) return showToast("沒有快取 rows，請先按【雲端讀取】","warn");
+      if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+      if(typeof window.applyRows==='function'){ applyRows(rows); }
+      showToast("已強制套用雲端 rows","ok");
+    }catch(err){ showToast("強制套用失敗："+err,"err"); }
+  }, true);
+  function hook(){
+    const s=window.__fireSnap;
+    if(!s || typeof s.loadFromFirestore!=="function") return false;
+    const orig=s.loadFromFirestore;
+    s.loadFromFirestore=async function(){
+      const res=await orig.apply(this, arguments);
+      const path="trafficSnapshots/"+(typeof getSnapId==='function'? getSnapId() : 'core-team-traffic-v3');
+      try{ window.__showCloudDiag(window.__FIRE_LAST_ROWS, path); }catch(e){}
+      return res;
+    };
+    // 首次若已有 rows 就顯示
+    try{ if(window.__FIRE_LAST_ROWS){ window.__showCloudDiag(window.__FIRE_LAST_ROWS, "trafficSnapshots/"+getSnapId()); } }catch(e){}
+    return true;
+  }
+  let n=0, timer=setInterval(()=>{ n++; if(hook()||n>40) clearInterval(timer); }, 200);
+})();
+</script>
 <!-- === /Cloud Debug Panel === -->
 
 
-
+<script>
+// === DateKey Scanner: 若頁面沒有 DATE_KEYS/DATES，從畫面文字自動推斷 ===
+(function(){
+  function visible(el){
+    if(!el) return false;
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width>0 && rect.height>0;
+  }
+  function uniq(arr){ return Array.from(new Set(arr)); }
+  function pickDateTexts(){
+    const mmdd = [];
+    const all = document.querySelectorAll('th, .date, .date-label, .header, span, div, button');
+    const re = /^\s*(\d{2})\/(\d{2})\s*$/;
+    all.forEach(el=>{
+      const t = (el.textContent||"").trim();
+      if(re.test(t) && visible(el)){
+        mmdd.push(t);
+      }
+    });
+    const arr = uniq(mmdd).slice(0, 12);
+    return arr;
+  }
+  function ensureKeys(){
+    if (Array.isArray(window.DATE_KEYS) && window.DATE_KEYS.length) return true;
+    const mmdd = pickDateTexts();
+    if (mmdd.length >= 4){
+      window.DATE_KEYS = mmdd;
+      const y = String(new Date().getFullYear());
+      window.DATES = mmdd.map(s=> y + "-" + s.replace("/", "-"));
+      if (window.showToast) showToast("偵測到日期鍵："+mmdd.join(", "), "ok");
+      return true;
+    }
+    return false;
+  }
+  let tries = 0;
+  const iv = setInterval(function(){
+    tries++;
+    if (ensureKeys() || tries>20) clearInterval(iv);
+  }, 400);
+  document.addEventListener("DOMContentLoaded", function(){ setTimeout(ensureKeys, 300); });
+})();
+</script>
 
 
 <!-- ===== Force Render Layer for GitHub Pages ===== -->
-
-<!-- ===== /Force Render Layer ===== -->
-
-
-<!-- SAFE Firestore + Force Render (no try/catch) -->
-
-
-
-
-
-
-
-
-<!-- LITE Firestore Loader: manual, single-run, no loops -->
-<style>
-#litePanel{position:fixed;right:16px;bottom:16px;z-index:2147483647;background:#0b1020;color:#e5f0ff;
-  border:1px solid #3b82f6;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.35);
-  padding:10px 12px;font-size:12px;min-width:260px}
-#litePanel .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
-#litePanel button{padding:6px 10px;border:1px solid #93c5fd;background:#0a1222;color:#cfe1ff;border-radius:8px;cursor:pointer}
-#litePanel small{opacity:.85}
-</style>
-<div id="litePanel">
-  <div class="row"><strong>雲端讀取（LITE）</strong><small id="lp_status">待命</small></div>
-  <div class="row"><span>路徑</span><small>trafficSnapshots/core-team-traffic-v3</small></div>
-  <div class="row">
-    <button id="lp_load">讀取並套用</button>
-    <button id="lp_close">關閉</button>
-  </div>
-  <div class="row"><small id="lp_info"></small></div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
 <script>
 (function(){
-  function setStatus(t){ var el=document.getElementById('lp_status'); if(el) el.textContent=t; }
-  function setInfo(t){ var el=document.getElementById('lp_info'); if(el) el.textContent=t; }
-  function getTB(){ return document.getElementById('tbody') || document.querySelector('tbody.data-body') || document.querySelector('tbody'); }
+  // Toast (lightweight)
+  function toast(msg){
+    try{
+      var id="__toastRoot"; var root=document.getElementById(id);
+      if(!root){ root=document.createElement("div"); root.id=id; root.style.cssText="position:fixed;right:16px;top:16px;z-index:999999;display:flex;flex-direction:column;gap:8px"; document.body.appendChild(root); }
+      var el=document.createElement("div"); el.style.cssText="background:#111827;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)"; el.textContent=msg;
+      root.appendChild(el); setTimeout(function(){ el.style.opacity="0"; el.style.transition="opacity .25s"; setTimeout(function(){ el.remove(); }, 260); }, 1800);
+    }catch(e){}
+  }
 
-  // Firebase init
-  var cfg={
-    apiKey:"AIzaSyDDZYbqfz-A5BcpKmO_TO8ot5AAp4bUeTE",
-    authDomain:"bni-info-meeting.firebaseapp.com",
-    projectId:"bni-info-meeting",
-    storageBucket:"bni-info-meeting.firebasestorage.app",
-    messagingSenderId:"943878549247",
-    appId:"1:943878549247:web:a1ab47cbf589e3b1ab26ca",
-    measurementId:"G-P2QGJ52GKW"
-  };
-  try{ if(!firebase.apps.length) firebase.initializeApp(cfg); }catch(_e){}
-  var db=firebase.firestore();
-
-  function ensureDateKeys(){
-    if(Array.isArray(window.DATE_KEYS)&&window.DATE_KEYS.length&&Array.isArray(window.DATES)&&window.DATES.length) return true;
-    var re=/^\s*(\d{2})\/(\d{2})\s*$/; var mmdd=[];
-    (document.querySelectorAll('th,button,div,span')||[]).forEach(function(el){
-      var t=(el.textContent||'').trim(); if(re.test(t)) mmdd.push(t);
+  // 推斷日期鍵（若頁面沒提供 DATE_KEYS/DATES）
+  function tryInferDateKeys(){
+    if (Array.isArray(window.DATE_KEYS) && window.DATE_KEYS.length && Array.isArray(window.DATES) && window.DATES.length) return true;
+    var re=/^\s*(\d{2})\/(\d{2})\s*$/;
+    var mmdd=[];
+    document.querySelectorAll('th,button,div,span').forEach(function(el){
+      var t=(el.textContent||"").trim();
+      if(re.test(t)) mmdd.push(t);
     });
-    mmdd=Array.from(new Set(mmdd));
-    if(mmdd.length>=4){ window.DATE_KEYS=mmdd.slice(0,8); var y=String(new Date().getFullYear());
-      window.DATES=window.DATE_KEYS.map(function(s){return y+'-'+s.replace('/','-');}); return true; }
+    mmdd = Array.from(new Set(mmdd));
+    if(mmdd.length>=4){
+      window.DATE_KEYS = mmdd.slice(0,8);
+      var y = String(new Date().getFullYear());
+      window.DATES = window.DATE_KEYS.map(function(s){ return y+"-"+s.replace("/","-"); });
+      toast("偵測日期鍵："+window.DATE_KEYS.join(", "));
+      return true;
+    }
     return false;
   }
 
+  // 將 rows 寫入畫面（盡量相容不同 DOM）
   function forceRender(rows){
     if(!Array.isArray(rows)) return false;
-    if(!ensureDateKeys()) return false;
-    var DK=window.DATE_KEYS, DS=window.DATES, TB=getTB(); if(!TB) return false;
-    var trs=TB.querySelectorAll('tr');
-    for(var ri=0;ri<trs.length;ri++){
-      var tr=trs[ri]; var row=rows[ri]||{}; var tds=tr.querySelectorAll('td');
-      for(var di=0;di<DK.length;di++){
-        var dispKey=DK[di], isoKey=DS[di], cell=tds[3+di]; if(!cell) continue;
-        var key=row.hasOwnProperty(dispKey)?dispKey:row.hasOwnProperty(isoKey)?isoKey:null;
-        if(!key){ var y=(isoKey&&/^\d{4}-\d{2}-\d{2}$/.test(isoKey))?isoKey.slice(0,4):String(new Date().getFullYear());
-          var iso2=y+'-'+dispKey.replace('/','-'); if(row.hasOwnProperty(iso2)) key=iso2; }
-        if(!key) continue;
-        var lamp=row[key]||'', g=parseInt(row[key+'_g'])||0, o2o=parseInt(row[key+'_1on1'])||0;
-        var partners=Array.isArray(row[key+'_p'])?row[key+'_p']:[];
-        var status=cell.querySelector('.status'); if(status){ status.textContent=lamp; status.setAttribute('aria-label',lamp); }
-        var gInput=cell.querySelector('.guest-input'); if(gInput){ gInput.value=String(g); }
-        var pill=cell.querySelector('.o2o-pill'); if(pill){ var n=partners.length>0?partners.length:o2o; pill.dataset.count=String(n); pill.textContent='🤝 '+n; }
-        if(!status&&!gInput&&!pill){
-          cell.innerHTML='<div class="fr-cell"><span class="lamp">'+(lamp||'')+'</span><span class="mini">👥'+o2o+'</span><span class="mini">🧑‍🦱'+g+'</span></div>';
+    var DK = window.DATE_KEYS || []; // 10/01
+    var DS = window.DATES || [];     // 2025-10-01
+    // 嘗試抓表格
+    var TB = document.getElementById('tbody') || document.querySelector('tbody.data-body, tbody');
+    if(!TB){ return false; }
+
+    var trs = TB.querySelectorAll('tr');
+    trs.forEach(function(tr, ri){
+      var row = rows[ri] || {};
+      var cells = tr.querySelectorAll('td');
+      DK.forEach(function(dispKey, di){
+        var isoKey = DS[di];
+        var colIdx = 3+di; // 以你既有結構為準（前3欄為 # / 姓名 / 專業別）
+        var cell = cells[colIdx]; if(!cell) return;
+        var key = null;
+        if (Object.prototype.hasOwnProperty.call(row, dispKey)) key = dispKey;
+        else if (Object.prototype.hasOwnProperty.call(row, isoKey)) key = isoKey;
+        else {
+          // 再試把 mm/dd 轉 iso
+          if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+            var y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+            var iso2=y+"-"+String(dispKey).replace(/\//g,"-");
+            if (Object.prototype.hasOwnProperty.call(row, iso2)) key = iso2;
+          }
         }
-      }
-    }
-    try{ if(typeof window.updateTotals==='function') window.updateTotals(); }catch(_e){}
+        if(!key) return;
+
+        var lamp = row[key] || "";                       // 🟢🟡🔴
+        var g    = parseInt(row[key+"_g"]) || 0;         // 貴賓數
+        var o2o  = parseInt(row[key+"_1on1"]) || 0;      // 配對數（或 1on1）
+        var partners = Array.isArray(row[key+"_p"])? row[key+"_p"] : [];
+
+        // 優先找既有元素
+        var status = cell.querySelector('.status');
+        if (status){ status.textContent = lamp; status.setAttribute('aria-label', lamp); }
+        var gInput = cell.querySelector('.guest-input');
+        if (gInput) gInput.value = String(g);
+        var pill   = cell.querySelector('.o2o-pill');
+        if (pill){ var n = partners.length>0 ? partners.length : o2o; pill.dataset.count = String(n); pill.textContent = "🤝 "+n; }
+        var pairBtn = cell.querySelector('.pair-btn');
+        if (pairBtn) pairBtn.dataset.partners = JSON.stringify(partners);
+
+        // 如果以上找不到元素，就直接把內容塞進 cell（保底）
+        if (!status && !gInput && !pill){
+          cell.innerHTML = '<div class="fr-cell"><span class="lamp">'+(lamp||'')+'</span>' +
+                           '<span class="mini">👥'+o2o+'</span>' +
+                           '<span class="mini">🧑‍🦱'+g+'</span></div>';
+          var miniCss = document.getElementById('fr-mini-css');
+          if(!miniCss){
+            miniCss = document.createElement('style'); miniCss.id='fr-mini-css';
+            miniCss.textContent = '.fr-cell{display:flex;gap:8px;align-items:center;justify-content:center} .fr-cell .mini{opacity:.85;font-size:12px}';
+            document.head.appendChild(miniCss);
+          }
+        }
+      });
+    });
+
+    // 更新總計（若有）
+    try{ if(typeof window.updateTotals==='function') window.updateTotals(); }catch(e){}
     return true;
   }
 
-  function runOnce(){
-    setStatus('讀取中…');
-    db.collection('trafficSnapshots').doc('core-team-traffic-v3').get().then(function(snap){
-      if(!snap.exists){ setStatus('找不到文件'); return; }
-      var data=snap.data()||{}; var rows=Array.isArray(data.rows)?data.rows:[];
-      setInfo('rows='+rows.length);
-      // 先試 applyRows 再保底強制渲染
-      var ok=false;
-      var tb=getTB();
-      if(typeof window.applyRows==='function' && tb){
-        try{ window.applyRows(rows); ok=true; setStatus('已套用 applyRows'); }catch(_e){}
+  // 主流程：等待 rows、再等待表格與 applyRows；若一直等不到就強制渲染
+  function bootWithRows(rows){
+    var tries = 0;
+    var applied = false;
+    var iv = setInterval(function(){
+      tries++;
+      if (!applied && typeof window.applyRows === 'function' && document.getElementById('tbody')){
+        try{ window.applyRows(rows); applied = true; toast("已透過 applyRows 渲染"); }catch(e){ console.error(e); }
       }
-      if(!ok){
-        ok = forceRender(rows);
-        setStatus(ok?'已強制渲染':'渲染失敗');
+      if (!applied && forceRender(rows)){
+        applied = true; toast("已強制渲染");
       }
-    }).catch(function(err){
-      setStatus('錯誤'); setInfo(err.message||String(err));
-    });
+      if (applied || tries > 40){ clearInterval(iv); }
+    }, 500);
   }
 
-  document.getElementById('lp_load').addEventListener('click', runOnce);
-  document.getElementById('lp_close').addEventListener('click', function(){ var p=document.getElementById('litePanel'); if(p) p.remove(); });
+  // 監看 __FIRE_LAST_ROWS 被設定
+  try{
+    var _rows = null;
+    Object.defineProperty(window, "__FIRE_LAST_ROWS", {
+      set: function(v){ _rows = v; tryInferDateKeys(); bootWithRows(v); },
+      get: function(){ return _rows; }
+    });
+  }catch(e){}
 
+  // 若 Firebase 讀取已做完，直接進入（保險）
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      tryInferDateKeys();
+      if (Array.isArray(window.__FIRE_LAST_ROWS)){ bootWithRows(window.__FIRE_LAST_ROWS); }
+    }, 300);
+  });
 })();
 </script>
+<!-- ===== /Force Render Layer ===== -->
 
 </body>
 </html>
