@@ -2,6 +2,7 @@
 
 <html lang="zh-Hant">
 <head>
+  <!-- FIXTAG: cloud-toolbar v2025-10-09 -->
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <title>核心團成員－10/01~11/05：出席/遲到/缺席＋來賓（可輸入）＋一對一＋矩陣＋亮燈</title>
@@ -897,51 +898,23 @@ __FIRE_LAST_ROWS = rows;
   }
 
   function hookButtons(){
-  const pairs = [
-    ["saveBtn", typeof saveToFirestore === "function" ? saveToFirestore : null],
-    ["loadBtn", typeof loadFromFirestore === "function" ? loadFromFirestore : null],
-  ];
-  pairs.forEach(([id, fn])=>{
-    const el = document.getElementById(id);
-    if (el && typeof fn === "function"){
-      el.addEventListener("click", function(e){
-        try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
-        try{
-          const p = fn();
-          if (p && p.catch){ p.catch(err => showToast("Firestore 錯誤: " + err, "err")); }
-        }catch(err){ showToast("Firestore 執行失敗: " + err, "err"); }
-      });
+    const ids = [["saveBtn", saveToFirestore], ["loadBtn", loadFromFirestore]];
+    ids.forEach(([id, fn])=>{
+      const el=document.getElementById(id);
+      if (el){ el.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); fn().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); }); }
+    });
+    // Fallback by text content
+    if (!document.getElementById("saveBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/儲存|保存|Save/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
     }
-  });
-
-  // Fallback by text content (when IDs are missing)
-  if (!document.getElementById("saveBtn") && typeof saveToFirestore === "function"){
-    const b = [...document.querySelectorAll("button, a")].find(b => /儲存|保存|Save/i.test(b.textContent || ""));
-    if (b){
-      b.addEventListener("click", function(e){
-        try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
-        try{
-          const p = saveToFirestore();
-          if (p && p.catch){ p.catch(err => showToast("Firestore 錯誤: " + err, "err")); }
-        }catch(err){ showToast("Firestore 執行失敗: " + err, "err"); }
-      });
+    if (!document.getElementById("loadBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/讀取|載入|Load/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
     }
   }
-  if (!document.getElementById("loadBtn") && typeof loadFromFirestore === "function"){
-    const b = [...document.querySelectorAll("button, a")].find(b => /讀取|載入|Load/i.test(b.textContent || ""));
-    if (b){
-      b.addEventListener("click", function(e){
-        try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
-        try{
-          const p = loadFromFirestore();
-          if (p && p.catch){ p.catch(err => showToast("Firestore 錯誤: " + err, "err")); }
-        }catch(err){ showToast("Firestore 執行失敗: " + err, "err"); }
-      });
-    }
-  }
-}
 
-document.addEventListener("DOMContentLoaded", function(){ setTimeout(hookButtons, 500); });
+  document.addEventListener("DOMContentLoaded", function(){ setTimeout(hookButtons, 500); });
 
   window.__fireSnap = { saveToFirestore, loadFromFirestore };
   // Guard: neutralize legacy handlers on load/save buttons by cloning them once at DOM ready
@@ -1634,6 +1607,43 @@ window.__showCloudDiag=function(rows,path){
 })();
 </script>
 <!-- ===== /Force Render Layer ===== -->
+
+
+<!-- Cloud Quick Toolbar (hb-20251009-ct1) -->
+<style>
+#cloudToolbar{position:fixed;right:12px;bottom:12px;z-index:9999;display:flex;gap:8px}
+#cloudToolbar button{padding:8px 12px;border-radius:10px;border:none;box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer}
+#cloudToolbar .save{background:#0ea5e9;color:#fff}
+#cloudToolbar .load{background:#10b981;color:#fff}
+@media print{#cloudToolbar{display:none}}
+</style>
+<div id="cloudToolbar" aria-label="Cloud actions">
+  <button class="save" title="寫入 Firestore">雲端儲存</button>
+  <button class="load" title="讀取 Firestore">雲端讀取</button>
+</div>
+<script>
+(function(){
+  function safe(fn){ try{ return fn && fn(); }catch(err){ if (typeof showToast==='function') showToast('Firestore 執行失敗: '+err,'err'); } }
+  var bar = document.getElementById('cloudToolbar');
+  if (!bar) return;
+  var saveBtn = bar.querySelector('.save');
+  var loadBtn = bar.querySelector('.load');
+  if (saveBtn){
+    saveBtn.addEventListener('click', function(){
+      var p = (typeof saveToFirestore==='function') ? safe(saveToFirestore) : null;
+      if (p && p.catch){ p.catch(function(err){ if(typeof showToast==='function') showToast('Firestore 錯誤: '+err,'err'); }); }
+      if (!p && typeof showToast==='function') showToast('找不到 saveToFirestore 函式','err');
+    });
+  }
+  if (loadBtn){
+    loadBtn.addEventListener('click', function(){
+      var p = (typeof loadFromFirestore==='function') ? safe(loadFromFirestore) : null;
+      if (p && p.catch){ p.catch(function(err){ if(typeof showToast==='function') showToast('Firestore 錯誤: '+err,'err'); }); }
+      if (!p && typeof showToast==='function') showToast('找不到 loadFromFirestore 函式','err');
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
