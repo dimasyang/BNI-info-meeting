@@ -2,6 +2,7 @@
 
 <html lang="zh-Hant">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
 <style>
 /* Minimized diagnostics (hb-20251009-min) */
@@ -190,6 +191,26 @@
 </style>
 
 </style>
+
+<style>
+/* RWD helper (hb-20251009-rwd) */
+:root{ --rwd-zoom:1 }
+#rwd_wrap{ transform: scale(var(--rwd-zoom)); transform-origin: top left; }
+.rwd-scroll{ overflow:auto; -webkit-overflow-scrolling: touch; }
+body.rwd-mobile{ font-size: clamp(15px, 1.9vw + 0.5rem, 18px); line-height: 1.35; }
+body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px; }
+#rwd_fab_bar{ position:fixed; right:14px; bottom:58px; z-index:2147483646; display:flex; flex-direction:column; gap:10px }
+#rwd_fab_bar .fab{ width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
+  background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd; box-shadow:0 4px 12px rgba(0,0,0,.35); cursor:pointer; }
+#rwd_zoom_card{ position:fixed; right:66px; bottom:58px; background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd;
+  padding:8px 10px; border-radius:10px; display:none; gap:8px; align-items:center; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:2147483646 }
+#rwd_zoom_card input[type="range"]{ width:160px }
+@media (max-width:768px){
+  /* prefer mobile mode by default on small screens */
+  body:not(.rwd-mobile){ font-size: 15px; }
+}
+</style>
+
 </head>
 <body>
 
@@ -1105,7 +1126,7 @@ __FIRE_LAST_ROWS = rows;
   function refreshUI(){
     btn.classList.toggle("on", editing);
     btn.textContent = editing ? "編輯中" : "編輯";
-    document.documentElement.classList.toggle("editing", editing);
+    documentElement.classList.toggle("editing", editing);
   }
   btn.addEventListener("click", ()=>{
     if (!editing){
@@ -1668,6 +1689,81 @@ window.__showCloudDiag=function(rows,path){
   document.addEventListener('keydown', function(ev){
     if(ev.key==='Escape'){ setMin(true); }
   });
+})();
+</script>
+
+
+<div id="rwd_fab_bar" aria-label="RWD tools">
+  <div id="rwd_fab_mobile" class="fab" title="手機版切換">📱</div>
+  <div id="rwd_fab_zoom" class="fab" title="縮放">🔍</div>
+</div>
+<div id="rwd_zoom_card" role="dialog" aria-label="縮放調整">
+  <span>縮放</span>
+  <input id="rwd_zoom_range" type="range" min="0.75" max="1.4" step="0.05" value="1" />
+  <span id="rwd_zoom_val">100%</span>
+</div>
+<script>
+(function(){
+  // Wrap all body children into #rwd_wrap for scaling and scrolling safety
+  try{
+    var wrap = document.createElement('div');
+    wrap.id = 'rwd_wrap';
+    var sc = document.createElement('div');
+    sc.className = 'rwd-scroll';
+    while(document.body.firstChild){
+      var n = document.body.firstChild;
+      // keep FABs and diagnostic panel outside the wrap; move later
+      if(n.id === 'cd_fab' || n.id === 'cloudDiag') break;
+      sc.appendChild(n);
+    }
+    wrap.appendChild(sc);
+    document.body.insertBefore(wrap, document.body.firstChild);
+  }catch(e){}
+
+  var body = document.body;
+  var fabM = document.getElementById('rwd_fab_mobile');
+  var fabZ = document.getElementById('rwd_fab_zoom');
+  var card = document.getElementById('rwd_zoom_card');
+  var range = document.getElementById('rwd_zoom_range');
+  var val = document.getElementById('rwd_zoom_val');
+
+  function setZoom(z){
+    z = Math.max(0.6, Math.min(1.6, z||1));
+    document.documentElement.style.setProperty('--rwd-zoom', z);
+    if(val) val.textContent = Math.round(z*100) + '%';
+    try{ localStorage.setItem('rwd_zoom', String(z)); }catch(e){}
+  }
+
+  function setMobile(on){
+    if(on){ body.classList.add('rwd-mobile'); }
+    else{ body.classList.remove('rwd-mobile'); }
+    try{ localStorage.setItem('rwd_mobile', on?'1':'0'); }catch(e){}
+  }
+
+  // Restore prefs
+  try{
+    var z = parseFloat(localStorage.getItem('rwd_zoom')||'1'); if(!isNaN(z)){ setZoom(z); if(range) range.value = z; }
+    var m = localStorage.getItem('rwd_mobile'); if(m!==null){ setMobile(m==='1'); }
+    else if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches){ setMobile(true); }
+  }catch(e){ setZoom(1); }
+
+  if(fabM){
+    fabM.addEventListener('click', function(){ setMobile(!body.classList.contains('rwd-mobile')); });
+  }
+  if(fabZ){
+    fabZ.addEventListener('click', function(){
+      if(!card) return;
+      var show = card.style.display !== 'flex';
+      card.style.display = show ? 'flex' : 'none';
+    });
+  }
+  if(range){
+    range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); });
+  }
+  // hide zoom card on outside click
+  document.addEventListener('click', function(ev){
+    if(card && !card.contains(ev.target) && ev.target !== fabZ){ card.style.display='none'; }
+  }, true);
 })();
 </script>
 
