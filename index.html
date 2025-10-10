@@ -1,225 +1,333 @@
 <!DOCTYPE html>
+
 <html lang="zh-Hant">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>BNI 核心團成員（雲端＋RWD＋密碼）</title>
-  <style>
-    :root{ --bg:#0f1115; --surface:#151821; --muted:#9aa0a6; --text:#e8eaed; --accent:#facc15; --border:#262b3a;
-           --ok:#16a34a; --warn:#f59e0b; --err:#ef4444; --chip:#0b1220; --chip-b:#314d7a;}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans",sans-serif}
-    .wrap{max-width:1220px;margin:22px auto;padding:0 14px}
-    h1{font-size:20px;margin:0 0 10px}
-    .sub{color:var(--muted);font-size:12px;margin-bottom:12px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px}
-    .tag{padding:4px 9px;border-radius:999px;border:1px solid var(--border);color:var(--muted);background:#10131a}
-    button{background:#1b2030;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:10px;cursor:pointer}
-    button:hover{background:#20273a}
-    button[disabled]{opacity:.45;cursor:not-allowed}
-    .badge{font-size:11px;background:#111827;border:1px solid var(--border);color:#cbd5e1;padding:3px 6px;border-radius:8px}
-    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 4px 22px #00000040;overflow:hidden}
-    .table-wrap{overflow:auto;border-top:1px solid var(--border)}
-    table{width:100%;border-collapse:separate;border-spacing:0}
-    thead th{position:sticky;top:0;background:linear-gradient(180deg,#1b1f2b,#161a26);z-index:3}
-    th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:center;white-space:nowrap}
-    tbody tr:hover{background:#171b27}
-    #grid th:first-child,#grid td:first-child{position:sticky;left:0;background:inherit;z-index:2}
-    #grid th:nth-child(2),#grid td:nth-child(2){position:sticky;left:60px;background:inherit;z-index:2}
-    #grid th:nth-child(3),#grid td:nth-child(3){position:sticky;left:210px;background:inherit;z-index:2}
-    #grid th:nth-child(1){min-width:60px}
-    #grid th:nth-child(2){min-width:150px}
-    #grid th:nth-child(3){min-width:250px;text-align:left}
-    .date-head{min-width:120px}
-    .date-chip{display:inline-block;background:var(--accent);color:#111;padding:4px 10px;border-radius:8px;font-weight:700}
-    .cell-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
-    .status{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:999px;border:1px solid var(--border);background:#0f1320;cursor:pointer;user-select:none}
-    .status[aria-label="🟢"]{background:rgba(22,163,74,.14);border-color:rgba(22,163,74,.6)}
-    .status[aria-label="🟡"]{background:rgba(202,138,4,.14);border-color:rgba(202,138,4,.6)}
-    .status[aria-label="🔴"]{background:rgba(220,38,38,.14);border-color:rgba(220,38,38,.6)}
-    .guest-wrap{display:flex;align-items:center;gap:4px}
-    .guest-step,.guest-zero{font-size:11px;line-height:1;padding:3px 6px;border-radius:8px;border:1px solid var(--border);background:#1a2133;color:#dbeafe;cursor:pointer}
-    .guest-input{width:40px;text-align:center;background:#0c111c;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 4px}
-    .pair-btn{font-size:11px;line-height:1;padding:3px 6px;border-radius:8px;border:1px solid var(--border);background:#1a2133;color:#cfe1ff;cursor:pointer}
-    .o2o-pill{font-size:11px;padding:2px 6px;border:1px solid var(--chip-b);border-radius:999px;background:var(--chip);color:#cfe1ff}
-    .totals{font-size:12px;display:flex;gap:8px;justify-content:center;color:#cbd5e1}
-    .footer{color:var(--muted);padding:12px 16px}
-    input[type="search"]{background:#0c111c;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:10px;min-width:220px;margin-left:auto}
-    /* Matrix */
-    .matrix-card h2{font-size:16px;margin:14px}
-    #matrixWrap{overflow:auto;border-top:1px solid var(--border)}
-    #matrix{border-collapse:separate;border-spacing:0;width:100%}
-    #matrix th,#matrix td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:8px 10px;text-align:center;white-space:nowrap}
-    #matrix th:first-child,#matrix td:first-child{position:sticky;left:0;background:#141926;z-index:1;text-align:left}
-    #matrix thead th{position:sticky;top:0;background:#141926;z-index:2}
-    #matrix td.diag{background:repeating-linear-gradient(135deg, #1d2436, #1d2436 6px, #162033 6px, #162033 12px)}
-    #matrix td.lit{background:#0f1b31}
-    #matrix td:hover{outline:2px solid #3b82f6}
-    .hint{font-size:12px;color:#93a4c4;margin:8px 0 0 2px}
-    /* RWD helpers */
-    :root{ --rwd-zoom:1 }
-    #rwd_wrap{ transform: scale(var(--rwd-zoom)); transform-origin: top left; }
-    .rwd-scroll{ overflow:auto; -webkit-overflow-scrolling: touch; }
-    body.rwd-mobile{ font-size: clamp(15px, 1.9vw + 0.5rem, 18px); line-height: 1.35; }
-    body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px }
-    #rwd_fab_bar{ position:fixed; right:14px; bottom:18px; z-index:2147483646; display:flex; flex-direction:column; gap:10px }
-    #rwd_fab_bar .fab{ width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
-      background:#0a1222; color:#cfe1ff; border:1px solid #314d7a; box-shadow:0 4px 12px rgba(0,0,0,.35); cursor:pointer; }
-    #rwd_zoom_card{ position:fixed; right:66px; bottom:18px; background:#0a1222; color:#cfe1ff; border:1px solid #314d7a;
-      padding:8px 10px; border-radius:10px; display:none; gap:8px; align-items:center; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:2147483646 }
-    #rwd_zoom_card input[type="range"]{ width:160px }
-    /* Lock banner */
-    #lockBanner{position:sticky;top:0;z-index:5;display:none;padding:8px 10px;margin-bottom:8px;border:1px dashed #475569;border-radius:10px;background:#0b1220;color:#cfe1ff}
-    /* Password modal */
-    #pwdModal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
-    #pwdBox{background:#121726;border:1px solid var(--border);border-radius:12px;padding:16px;min-width:min(90vw,360px)}
-    #pwdBox h3{margin:0 0 8px}
-    #pwdBox input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:#0c111c;color:#e5e7eb}
-    #pwdBox .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-    #pwdBox button{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#1a2133;color:#cfe1ff}
-  
-/* --- Mobile-friendly sticky tweaks (avoid name overlay) --- */
-#grid th:nth-child(3), #grid td:nth-child(3){ box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset; }
-@media (max-width: 820px){
-  /* On small screens, unstick name & profession to prevent overlay on data cells */
-  #grid th:nth-child(2), #grid td:nth-child(2),
-  #grid th:nth-child(3), #grid td:nth-child(3){
-    position: static !important;
-    left: auto !important;
-    z-index: auto !important;
-    box-shadow: none !important;
-  }
-  /* Keep only the first index column sticky (small) */
-  #grid th:first-child, #grid td:first-child{
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 2 !important;
-  }
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>核心團成員－10/01~11/05：出席/遲到/缺席＋來賓（可輸入）＋一對一＋矩陣＋亮燈</title>
+<style>
+  :root{ --bg:#111; --card:#1b1b1b; --muted:#9aa0a6; --text:#e8eaed; --accent:#caaa00; --border:#2b2b2b; }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans",sans-serif}
+  .wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+  h1{font-size:20px;margin:0 0 12px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 16px}
+  button{background:#222;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:10px;cursor:pointer}
+  button:hover{background:#262626}
+  .tag{padding:4px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 4px 20px #00000040;overflow:hidden}
+  .table-wrap{overflow:auto;border-top:1px solid var(--border)}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{position:sticky;top:0;background:linear-gradient(180deg,#1f1f1f,#1a1a1a);z-index:3}
+  th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:center;white-space:nowrap}
+  tbody tr:hover{background:#1c1c1c}
+  th:first-child,td:first-child{position:sticky;left:0;background:inherit;z-index:2}
+  th:nth-child(2),td:nth-child(2){position:sticky;left:60px;background:inherit;z-index:2}
+  th:nth-child(3),td:nth-child(3){position:sticky;left:200px;background:inherit;z-index:2}
+  th:nth-child(1){min-width:60px}
+  th:nth-child(2){min-width:140px}
+  th:nth-child(3){min-width:240px}
+  .date-head{min-width:120px}
+  .date-chip{display:inline-block;background:var(--accent);color:#000;padding:4px 10px;border-radius:8px;font-weight:600}
+  .cell-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .status{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:999px;border:1px solid var(--border);background:#111;cursor:pointer;user-select:none;position:relative}
+  .status[aria-label="🟢"]{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.5)}
+  .status[aria-label="🟡"]{background:rgba(202,138,4,.12);border-color:rgba(202,138,4,.5)}
+  .status[aria-label="🔴"]{background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.5)}
+  /* 一對一亮燈（有配對就亮藍燈） */
+  .status .o2o-dot{position:absolute;left:-6px;top:-6px;width:10px;height:10px;border-radius:50%;background:#3b82f6;border:1px solid var(--border);display:none}
+  .status.o2o{background:rgba(59,130,246,.12);box-shadow:0 0 0 2px rgba(59,130,246,.35)}
+  .status.o2o .o2o-dot{display:block}
+  /* 來賓數字控制 */
+  .guest-wrap{display:flex;align-items:center;gap:4px}
+  .guest-step,.guest-zero{font-size:11px;line-height:1;padding:3px 6px;border-radius:8px;border:1px solid var(--border);background:#222;color:#ddd;cursor:pointer}
+  .guest-input{width:40px;text-align:center;background:#121212;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 4px}
+  /* 配對與矩陣 */
+  .pair-btn{font-size:11px;line-height:1;padding:3px 6px;border-radius:8px;border:1px solid var(--border);background:#222;color:#ddd;cursor:pointer}
+  .pair-btn:hover{background:#2a2a2a}
+  .o2o-pill{font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:8px;background:#121212;color:#ccc}
+  .totals{font-size:12px;display:flex;gap:8px;justify-content:center;color:var(--muted)}
+  .dot{font-size:12px}
+  .footer{color:var(--muted);padding:12px 16px}
+  .search{margin-left:auto}
+  input[type="search"]{background:#121212;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:10px;min-width:220px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
+  dialog{color:var(--text)}
+  /* 矩陣樣式 */
+  .matrix-card h2{font-size:16px;margin:16px}
+  #matrixWrap{overflow:auto;border-top:1px solid var(--border)}
+  #matrix{border-collapse:separate;border-spacing:0;width:100%}
+  #matrix th,#matrix td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:8px 10px;text-align:center;white-space:nowrap}
+  #matrix th:first-child,#matrix td:first-child{position:sticky;left:0;background:#171717;z-index:1}
+  #matrix thead th{position:sticky;top:0;background:#171717;z-index:2}
+  .diag{background:repeating-linear-gradient(45deg,#333 0,#333 4px,#222 4px,#222 8px)}
+
+/* ==== Matrix tidy + RWD-stable (V3.7) ==== */
+#matrix-wrap{ overflow-x:auto; }
+#matrix{
+  table-layout: fixed !important;
+  width: max-content !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+#matrix *, #matrix th, #matrix td{ box-sizing: border-box !important; }
+#matrix th, #matrix td{
+  padding: 8px 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  vertical-align: middle !important;
+}
+#matrix th:first-child, #matrix td:first-child{
+  min-width: 140px !important;
+  width: 140px !important;
+  max-width: 140px !important;
+}
+#matrix thead th:not(:first-child), #matrix tbody td:not(:first-child){
+  min-width: 72px !important;
+  width: 72px !important;
+  max-width: 72px !important;
+}
+/* lights */
+#matrix td.lit{ background-color: rgba(59,130,246,0.28) !important; box-shadow: inset 0 0 0 2px rgba(59,130,246,.55) !important; border-color: rgba(59,130,246,.65) !important; font-weight:700; }
+#matrix td.diag-self{ background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 8px, transparent 8px, transparent 16px); background-color: rgba(250,204,21,0.18); box-shadow: inset 0 0 0 1px rgba(250,204,21, .45); position:relative; }
+#matrix td.diag-self::after{ content:"◎"; position:absolute; right:6px; top:4px; font-size:12px; opacity:.75; }
+#matrix td.diag-self.lit{ background-color: rgba(250,204,21,0.18) !important; box-shadow: inset 0 0 0 1px rgba(250,204,21, .45) !important; border-color: rgba(250,204,21, .45) !important; }
+
+/* === Diagonal full-fill fix (V3.8) === */
+#matrix td.diag-self{
+  position: relative !important;
+  overflow: hidden !important;
+  background: none !important; /* we'll paint via ::before to ensure full cover */
+}
+#matrix td.diag-self::before{
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 8px, transparent 8px, transparent 16px),
+    linear-gradient(rgba(250, 204, 21, 0.18), rgba(250, 204, 21, 0.18));
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+#matrix td.diag-self::after{
+  z-index: 1 !important; /* the ◎ icon stays above the fill */
+}
+
+/* === Bottom-matrix-only light (v3.9) === */
+#matrix td.lit{
+  background-color: rgba(59,130,246,0.32) !important;
+  box-shadow: inset 0 0 0 2px rgba(59,130,246,.6) !important;
+  border-color: rgba(59,130,246,.7) !important;
+  font-weight: 800;
+}
+/* ensure header or any other 'lit' elsewhere is unaffected */
+:not(#matrix) td.lit, :not(#matrix) div.lit, :not(#matrix) span.lit { all: unset; }
+
+
+/* === Matrix tidy layout v1 === */
+#matrix table{border-collapse:collapse;table-layout:fixed;width:100%;}
+#matrix th,#matrix td{border:1px solid #e5e7eb;text-align:center;vertical-align:middle;
+  padding:6px 8px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#matrix th{background:#f8fafc;font-weight:600;}
+#matrix td{background:#ffffff;}
+#matrix td.diag{background:#f3f4f6;}
+#matrix td.lit{background:rgba(255,214,102,.28);outline:2px solid rgba(255,184,0,.9);font-weight:700;}
+/* fixed cell sizing for neat grid on desktop */
+@media(min-width:1024px){
+  #matrix th,#matrix td{width:48px;height:38px;}
+}
+/* make it scrollable on small screens */
+#matrix .scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+#matrix .scroll-x table{min-width:720px;}
+
+
+
+<style>
+/* === LightLock v3.2 (overlay only, no pointer-events tweak) === */
+#authShield{
+  position:fixed; inset:0; z-index:2147483646; /* on top */
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.9);
+  -webkit-backdrop-filter:saturate(120%) blur(1px);
+  backdrop-filter:saturate(120%) blur(1px);
+}
+#authShield.hidden{display:none;}
+#authShield .tap{
+  padding:10px 14px; border:1px solid #0f172a; border-radius:9999px;
+  background:#fff; font-size:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
 }
 
 
-/* Sticky-names mode (mobile-friendly) */
-body.sticky-names #grid th:nth-child(2), 
-body.sticky-names #grid td:nth-child(2),
-body.sticky-names #grid th:nth-child(3), 
-body.sticky-names #grid td:nth-child(3){
-  position: sticky !important;
-  left: auto !important;
-  z-index: 2 !important;
+<style>
+/* === LightLock v4 === */
+#authShield{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.85);backdrop-filter:saturate(120%) blur(1px);}
+#authShield.hidden{display:none;}
+#authShield .tap{width:14px;height:14px;border-radius:9999px;border:2px solid #111;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+/* Minimized diagnostics + RWD tools (final) */
+#cloudDiag.minimized{ display:none !important }
+#cd_fab{
+  position:fixed; right:14px; bottom:14px; width:30px; height:30px;
+  border-radius:9999px; background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:700; font-size:12px; cursor:pointer; z-index:2147483647;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
 }
-/* Position the second & third columns next to the first sticky col */
-body.sticky-names #grid th:nth-child(2), body.sticky-names #grid td:nth-child(2){ left: var(--sticky1, 60px) !important; }
-body.sticky-names #grid th:nth-child(3), body.sticky-names #grid td:nth-child(3){ left: calc(var(--sticky1, 60px) + var(--sticky2, 150px)) !important; }
-/* Add left padding to scrollable area so data doesn't hide under sticky columns */
-body.sticky-names .table-wrap{ padding-left: var(--frozenW, 420px); }
-/* Floating row name chip (shown when sticky is OFF and user touches table) */
-#rowChip{
-  position: fixed; left: 10px; bottom: 70px; z-index: 2147483001;
-  background: #0a1222; color: #cfe1ff; border:1px solid #314d7a; border-radius: 999px;
-  padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
-  display:none; pointer-events:none; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+#cd_fab.hidden{ display:none }
+#cloudDiag .minbtn{
+  position:absolute; top:6px; right:6px; background:#1f2937; color:#cfe1ff;
+  border:0; border-radius:6px; padding:2px 6px; font-size:12px; cursor:pointer;
 }
-@media (min-width: 821px){
-  /* Only use the chip behavior on small screens */
-  #rowChip{ display:none !important; }
+/* RWD helpers */
+:root{ --rwd-zoom:1 }
+#rwd_wrap{ transform: scale(var(--rwd-zoom)); transform-origin: top left; }
+.rwd-scroll{ overflow:auto; -webkit-overflow-scrolling: touch; }
+body.rwd-mobile{ font-size: clamp(15px, 1.9vw + 0.5rem, 18px); line-height: 1.35; }
+body.rwd-mobile button, body.rwd-mobile .btn{ min-height: 38px; font-size: 16px }
+#rwd_fab_bar{ position:fixed; right:14px; bottom:58px; z-index:2147483646; display:flex; flex-direction:column; gap:10px }
+#rwd_fab_bar .fab{ width:42px; height:42px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
+  background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd; box-shadow:0 4px 12px rgba(0,0,0,.35); cursor:pointer; }
+#rwd_zoom_card{ position:fixed; right:66px; bottom:58px; background:#0a1222; color:#cfe1ff; border:1px solid #93c5fd;
+  padding:8px 10px; border-radius:10px; display:none; gap:8px; align-items:center; box-shadow:0 8px 24px rgba(0,0,0,.35); z-index:2147483646 }
+#rwd_zoom_card input[type="range"]{ width:160px }
+@media (max-width:768px){
+  body:not(.rwd-mobile){ font-size: 15px }
 }
+
+</style>
+
+</style>
 
 </style>
 </head>
 <body>
-<div class="wrap" id="app">
-  <h1>核心團成員－10/01 ~ 11/05（🟢出席｜🟡遲到｜🔴缺席） <span id="modeBadge" class="badge" title="未解鎖時僅能雲端讀取">Read-only</span></h1>
-  <div class="sub">日期：10/01、10/08、10/15、10/22、10/29、11/05 ｜ 來賓：- / + / 直接輸入 / 0 歸零 ｜ 一對一：按「配對」勾選對象</div>
 
-  <div id="lockBanner">🔒 目前為「雲端讀取模式」。若需編輯，請輸入密碼解鎖。</div>
+<style>
+#forceApplyBtn{position:fixed;right:12px;top:54px;z-index:99999;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:12px;cursor:pointer;opacity:.85}
+#forceApplyBtn:hover{opacity:1}
+</style>
+<button id="forceApplyBtn" title="強制把最近一次雲端資料套到畫面">強制套用雲端</button>
 
-  <div class="toolbar">
-    <button id="unlockBtn">解鎖（密碼）</button>
-    <button id="cloudSave">雲端儲存</button>
-    <button id="cloudLoad">雲端讀取</button>
-    <button id="toggleSticky" class="badge" title="行動裝置建議開啟">鎖定姓名欄：關</button>
-    <button id="importBtn">匯入成員</button>
-    <button id="csvBtn">匯出CSV</button>
-    <button id="printBtn">列印</button>
-    <input class="search" id="q" placeholder="快速搜尋姓名/專業別…" type="search"/>
-  </div>
 
-  <div class="card">
-    <div class="table-wrap">
-      <table id="grid">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>姓名</th>
-            <th>專業別</th>
-            <th class="date-head"><span class="date-chip">10/01</span><div class="totals" data-date="2025-10-01"></div></th>
-            <th class="date-head"><span class="date-chip">10/08</span><div class="totals" data-date="2025-10-08"></div></th>
-            <th class="date-head"><span class="date-chip">10/15</span><div class="totals" data-date="2025-10-15"></div></th>
-            <th class="date-head"><span class="date-chip">10/22</span><div class="totals" data-date="2025-10-22"></div></th>
-            <th class="date-head"><span class="date-chip">10/29</span><div class="totals" data-date="2025-10-29"></div></th>
-            <th class="date-head"><span class="date-chip">11/05</span><div class="totals" data-date="2025-11-05"></div></th>
-            <th>出席率</th>
-            <th>來賓總數</th>
-            <th>帶來賓比率</th>
-            <th>一對一次數</th>
-            <th>一對一比率</th>
-            <th>總體績效</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="footer">點圓點切換：🟢 → 🟡 → 🔴 → 空白。每格可直接輸入來賓數；按「配對」勾選對象，下方矩陣會依日期去重計算。</div>
-  </div>
 
-  <div class="card matrix-card" id="o2oMatrixCard" style="margin-top:16px;">
-    <h2>一對一配對矩陣</h2>
-    <div id="matrixWrap"><table id="matrix"></table></div>
-    <div class="footer" style="color:#9aa0a6;">滑鼠移到數字可看當天日期；斜線為本人；同一天同一組配對只算一次。</div>
-  </div>
-  <div class="hint">RWD：右下角 📱 切換手機版、🔍 調整縮放（會記憶）。</div>
-</div>
-
-<!-- Password Modal -->
-<div id="pwdModal" style="display:none">
-  <div id="pwdBox">
-    <h3>輸入密碼以解鎖編輯</h3>
-    <input id="pwdInput" type="password" placeholder="請輸入密碼" />
-    <div class="actions">
-      <button id="onlyRead">只用雲端讀取</button>
-      <button id="pwdOK">解鎖</button>
-    </div>
-  </div>
-</div>
-
-<!-- 匯入對話框 -->
-<dialog id="importDialog">
-  <form method="dialog" style="min-width:min(720px,90vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
-    <h3 style="margin:0 0 8px;">匯入成員（每列：編號,姓名,專業別）</h3>
-    <textarea id="importText" rows="10" style="width:100%;background:#0c111c;color:#eee;border:1px solid var(--border);border-radius:8px;padding:8px;white-space:pre;"></textarea>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
-      <button value="cancel">取消</button>
-      <button id="doImport" value="default">匯入</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- 配對對話框 -->
-<dialog id="pairDialog">
-  <form method="dialog" style="min-width:min(560px,92vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
-    <h3 id="pairTitle" style="margin:0 0 8px;">選擇一對一對象</h3>
-    <div id="pairList" style="max-height:52vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:#0c111c"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-      <button value="cancel">取消</button>
-      <button id="pairOK" value="default">確定</button>
-    </div>
-  </form>
-</dialog>
-
+<style>
+/* === Toast UI (non-blocking) === */
+#__toastRoot{position:fixed;right:16px;top:16px;z-index:2147483645;display:flex;flex-direction:column;gap:8px}
+.toast{background:#111827;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:.98}
+.toast.ok{background:#065f46}.toast.warn{background:#92400e}.toast.err{background:#7f1d1d}
+.toast small{opacity:.9}
+</style>
+<div id="__toastRoot" aria-live="polite" aria-atomic="true"></div>
 <script>
-// === 常數 ===
-const DATES = ["10/01","10/08","10/15","10/22","10/29","11/05"];
-const DATE_KEYS = ["2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29","2025-11-05"];
+window.showToast = function(msg, type){
+  try{
+    const root = document.getElementById('__toastRoot'); if(!root) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + (type||'ok');
+    el.innerHTML = msg;
+    root.appendChild(el);
+    setTimeout(()=>{ el.style.transition='opacity .25s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 300); }, 2200);
+  }catch(e){}
+};
+</script>
+
+
+
+<style>
+/* === Edit Gate UI === */
+#editBar{position:fixed; right:12px; top:12px; z-index:99999; display:flex; gap:8px;}
+#editBar button{padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:12px; cursor:pointer;}
+#editBar .on{border-color:#0ea5e9; box-shadow:0 0 0 2px rgba(14,165,233,.15);}
+#editHint{position:fixed; right:12px; top:46px; z-index:99998; font-size:12px; color:#6b7280;}
+</style>
+<div id="editBar" aria-hidden="false">
+  <button id="editToggleBtn" title="切換編輯">編輯</button>
+</div>
+
+
+
+</div>
+<div class="wrap">
+<h1>核心團成員－10/01 ~ 11/05（🟢出席｜🟡遲到｜🔴缺席）</h1>
+<div class="toolbar">
+<span class="tag">日期：10/01、10/08、10/15、10/22、10/29、11/05（無請假制度）</span>
+<span class="tag">👥 來賓：- / + / 直接輸入 / 0 歸零</span>
+<span class="tag">🤝 一對一：按「配對」勾選對象，數字自動帶入，格子會亮藍燈</span>
+<button id="importBtn">匯入成員</button>
+<button id="saveBtn">儲存</button>
+<button id="loadBtn">讀取</button>
+<button id="clearBtn">清空</button>
+<button id="csvBtn">匯出CSV</button>
+<button id="printBtn">列印</button>
+<input class="search" id="q" placeholder="快速搜尋姓名/專業別…" type="search"/>
+</div>
+<div class="card">
+<div class="table-wrap">
+<table id="grid">
+<thead>
+<tr>
+<th>#</th>
+<th>姓名</th>
+<th>專業別</th>
+<th class="date-head"><span class="date-chip">10/01</span><div class="totals" data-date="2025-10-01"></div></th>
+<th class="date-head"><span class="date-chip">10/08</span><div class="totals" data-date="2025-10-08"></div></th>
+<th class="date-head"><span class="date-chip">10/15</span><div class="totals" data-date="2025-10-15"></div></th>
+<th class="date-head"><span class="date-chip">10/22</span><div class="totals" data-date="2025-10-22"></div></th>
+<th class="date-head"><span class="date-chip">10/29</span><div class="totals" data-date="2025-10-29"></div></th>
+<th class="date-head"><span class="date-chip">11/05</span><div class="totals" data-date="2025-11-05"></div></th>
+<th>出席率</th>
+<th>來賓總數</th>
+<th>帶來賓比率</th>
+<th>一對一次數</th>
+<th>一對一比率</th>
+<th>總體績效</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<div class="footer">點圓點切換：🟢 → 🟡 → 🔴 → 空白。每格可直接輸入來賓數；按「配對」勾選對象後，下方矩陣會自動更新。資料保存在本機（localStorage）。</div>
+</div>
+<!-- 一對一配對矩陣（往下拉） -->
+<div class="card matrix-card" id="o2oMatrixCard" style="margin-top:16px;">
+<h2>一對一配對矩陣（隨上方「配對」設定自動更新）</h2>
+<div id="matrixWrap"><div id="matrix-wrap"><table id="matrix"></table></div></div>
+<div class="footer" style="color:#9aa0a6;">斜線=本人；數字=此期間一對一次數（同一天同一組只算一次，不重複）。</div>
+</div>
+<div class="hint">CSV 含統計欄＋一對一欄位；可直接貼到 Excel/Google 試算表。</div>
+</div>
+<!-- 成員匯入對話框 -->
+<dialog id="importDialog">
+<form method="dialog" style="min-width:min(720px,90vw);background:#1b1b1b;border:1px solid var(--border);border-radius:12px;padding:16px;">
+<h3 style="margin:0 0 8px;">匯入成員（每列：編號,姓名,專業別）</h3>
+<p style="color:#9aa0a6;">可貼 Excel 轉存的 CSV，或使用 TAB/逗號分隔。匯入後會覆蓋現有名單並重建表格。</p>
+<textarea id="importText" rows="10" style="width:100%;background:#121212;color:#eee;border:1px solid var(--border);border-radius:8px;padding:8px;white-space:pre;"></textarea>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
+<button value="cancel">取消</button>
+<button id="doImport" value="default">匯入</button>
+</div>
+</form>
+</dialog>
+<!-- 一對一配對對象選擇 -->
+<dialog id="pairDialog">
+<form method="dialog" style="min-width:min(540px,90vw);background:#1b1b1b;border:1px solid var(--border);border-radius:12px;padding:16px;">
+<h3 id="pairTitle" style="margin:0 0 8px;">選擇一對一對象</h3>
+<div id="pairList" style="max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:#121212"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+<button value="cancel">取消</button>
+<button id="pairOK" value="default">確定</button>
+</div>
+</form>
+</dialog>
+<script>
+// === 基本設定 ===
+const DATES = ["10/01","10/08","10/15","10/22","10/29","11/05"]; // 顯示
+const DATE_KEYS = ["2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29","2025-11-05"]; // 存檔
+const STORAGE_KEY = "core-team-traffic-2025-10";
 const MEMBERS_KEY = "core-team-members-2025-10";
 
 let MEMBERS = [
@@ -239,78 +347,67 @@ let MEMBERS = [
 ];
 
 const tbody = document.getElementById('tbody');
-let READ_ONLY = true;
 
-// === UI helpers ===
-function setReadOnly(ro){
-  READ_ONLY = ro;
-  const badge = document.getElementById('modeBadge');
-  const banner = document.getElementById('lockBanner');
-  badge.textContent = ro ? "Read-only" : "已解鎖";
-  badge.style.background = ro ? "#111827" : "#052e16";
-  banner.style.display = ro ? "block" : "none";
-
-  // Disable/enable controls
-  document.getElementById('cloudSave').disabled = ro;
-  document.getElementById('importBtn').disabled = ro;
-  [...document.querySelectorAll('.status,.guest-step,.guest-zero,.guest-input,.pair-btn')].forEach(el=>{
-    el.toggleAttribute('disabled', ro);
-    if (el.classList.contains('guest-input')) el.readOnly = ro;
-  });
-}
-
-const STATES=['','🟢','🟡','🔴'];
-function statusCell(dataKey){
-  const wrap = document.createElement('div'); wrap.className = 'cell-wrap';
-  const btn = document.createElement('button'); btn.className = 'status'; btn.setAttribute('data-date', dataKey); btn.setAttribute('aria-label',''); btn.textContent = ''; btn.title='左鍵：出席/遲到/缺席'; 
-  btn.addEventListener('click', ()=>{ if(READ_ONLY) return; cycle(btn) });
-  wrap.appendChild(btn);
-
-  const gwrap = document.createElement('div'); gwrap.className='guest-wrap';
+// 來賓控制（數字）
+function guestControls(){
+  const wrap = document.createElement('div'); wrap.className = 'guest-wrap';
   const minus = document.createElement('button'); minus.type='button'; minus.className='guest-step'; minus.textContent='-';
   const input = document.createElement('input'); input.type='number'; input.className='guest-input'; input.min='0'; input.max='99'; input.value='0';
   const plus = document.createElement('button'); plus.type='button'; plus.className='guest-step'; plus.textContent='+';
   const zero = document.createElement('button'); zero.type='button'; zero.className='guest-zero'; zero.textContent='0'; zero.title='歸零';
   const clamp = ()=>{ let v=parseInt(input.value||'0'); if(isNaN(v)||v<0) v=0; if(v>99) v=99; input.value=String(v); };
-  minus.addEventListener('click', ()=>{ if(READ_ONLY) return; input.value = String(Math.max(0, (parseInt(input.value||'0')||0)-1)); input.dispatchEvent(new Event('input')); });
-  plus.addEventListener('click',  ()=>{ if(READ_ONLY) return; input.value = String(Math.min(99,(parseInt(input.value||'0')||0)+1)); input.dispatchEvent(new Event('input')); });
-  zero.addEventListener('click',  ()=>{ if(READ_ONLY) return; input.value = '0'; input.dispatchEvent(new Event('input')); });
-  input.addEventListener('input', ()=>{ if(READ_ONLY) return; clamp(); updateTotals(); });
-  gwrap.append(minus,input,plus,zero);
-  wrap.appendChild(gwrap);
+  minus.addEventListener('click', ()=>{ input.value = String(Math.max(0, (parseInt(input.value||'0')||0)-1)); input.dispatchEvent(new Event('input')); });
+  plus.addEventListener('click',  ()=>{ input.value = String(Math.min(99,(parseInt(input.value||'0')||0)+1)); input.dispatchEvent(new Event('input')); });
+  zero.addEventListener('click',  ()=>{ input.value = '0'; input.dispatchEvent(new Event('input')); });
+  input.addEventListener('input', ()=>{ clamp(); updateTotals(); });
+  wrap.append(minus,input,plus,zero);
+  return wrap;
+}
 
+// 狀態＋來賓＋一對一（配對）
+function statusCell(dataKey){
+  const wrap = document.createElement('div'); wrap.className = 'cell-wrap';
+  const btn = document.createElement('button'); btn.className = 'status'; btn.setAttribute('data-date', dataKey); btn.setAttribute('aria-label',''); btn.textContent = ''; btn.title='左鍵：出席/遲到/缺席'; btn.addEventListener('click', ()=> cycle(btn));
+  // 藍色小燈
+  const dot = document.createElement('span'); dot.className='o2o-dot'; btn.appendChild(dot);
+  wrap.appendChild(btn);
+  // 來賓
+  wrap.appendChild(guestControls());
+  // 一對一：配對按鈕 + 顯示 Pill
   const pill = document.createElement('span'); pill.className='o2o-pill'; pill.textContent='🤝 0'; pill.dataset.count='0';
   const pair = document.createElement('button'); pair.type='button'; pair.className='pair-btn'; pair.textContent='配對'; pair.dataset.partners='[]';
-  pair.addEventListener('click',()=>{ if(READ_ONLY) return; openPairDialog(btn, pill) });
+  pair.addEventListener('click',()=>openPairDialog(btn, pill));
   wrap.append(pill, pair);
   return wrap;
 }
-function cycle(btn){ const cur=btn.getAttribute('aria-label')||''; const idx=STATES.indexOf(cur); const nxt=STATES[(idx+1)%STATES.length]; btn.setAttribute('aria-label',nxt); btn.textContent=nxt; updateTotals(); }
 
 function buildTable(){
   tbody.innerHTML='';
   MEMBERS.forEach((m)=>{
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td>${m.profession}</td>`;
+    tr.innerHTML = `<td>${m.id}</td><td>${m.name}</td><td style="text-align:left;white-space:normal">${m.profession}</td>`;
     DATE_KEYS.forEach(k=>{ const td=document.createElement('td'); td.appendChild(statusCell(k)); tr.appendChild(td); });
+    // 右側 6 欄位佔位
     for(let i=0;i<6;i++){ const td=document.createElement('td'); tr.appendChild(td); }
     tbody.appendChild(tr);
   });
-  updateTotals();
-  setReadOnly(READ_ONLY);
+  buildMatrix();
 }
 
-// === Pairing ===
+const STATES=['','🟢','🟡','🔴'];
+function cycle(btn){ const cur=btn.getAttribute('aria-label')||''; const idx=STATES.indexOf(cur); const nxt=STATES[(idx+1)%STATES.length]; btn.setAttribute('aria-label',nxt); btn.textContent=nxt; updateTotals(); }
+
+// === 一對一配對 ===
 const pairDialog=document.getElementById('pairDialog');
 const pairList=document.getElementById('pairList');
 const pairOK=document.getElementById('pairOK');
 const pairTitle=document.getElementById('pairTitle');
-let pairCtx=null;
+let pairCtx=null; // {btn, pill, ri, di}
 
 function openPairDialog(btn, pill){
   const cell = btn.closest('td');
   const tr = cell.closest('tr'); const ri = [...tbody.children].indexOf(tr);
-  const di = [...tr.children].indexOf(cell) - 3;
+  const di = [...tr.children].indexOf(cell) - 3; // offset by 3 fixed cols
   pairCtx = { btn, pill, ri, di };
   pairTitle.textContent = `${MEMBERS[ri].name}－${DATES[di]} 的一對一對象`;
   pairList.innerHTML='';
@@ -328,18 +425,21 @@ function openPairDialog(btn, pill){
   }catch(e){}
   pairDialog.showModal();
 }
+
 pairOK?.addEventListener('click',()=>{
   if(!pairCtx) return;
   const {btn,pill,ri,di} = pairCtx;
   const cell = btn.closest('td');
   const chosen = [...pairList.querySelectorAll('input[type="checkbox"]')].filter(i=>i.checked).map(i=>parseInt(i.value));
   const pairBtn = cell.querySelector('.pair-btn'); pairBtn.dataset.partners = JSON.stringify(chosen);
+  // 更新 pill 顯示與藍燈
   pill.dataset.count = String(chosen.length);
   pill.textContent = `🤝 ${chosen.length}`;
+  btn.classList.toggle('o2o', chosen.length>0);
   updateTotals();
 });
 
-// === Snapshot / Apply ===
+// === 儲存/讀取 ===
 function snapshot(){
   const rows=[];
   [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
@@ -354,14 +454,20 @@ function snapshot(){
       row[k]=b.getAttribute('aria-label')||'';
       row[k+'_g']=parseInt(g?.value||'0')||0;
       try{ row[k+'_p']=JSON.parse(p?.dataset.partners||'[]'); }catch(e){ row[k+'_p']=[]; }
-      row[k+'_1on1']=parseInt(pill?.dataset.count||'0')||0;
+      row[k+'_1on1']=parseInt(pill?.dataset.count||'0')||0; // 冗餘儲存
     });
     rows.push(row);
   });
   return rows;
 }
-function applyRows(rows){
-  if(!Array.isArray(rows)) return;
+
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot())); alert('已儲存到本機。'); }
+
+function load(){
+  const mraw=localStorage.getItem(MEMBERS_KEY); if(mraw){ try{ MEMBERS=JSON.parse(mraw);}catch(e){} }
+  buildTable();
+  const raw=localStorage.getItem(STORAGE_KEY); if(!raw){ updateTotals(); return; }
+  const rows=JSON.parse(raw);
   [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
     const cells=tr.querySelectorAll('td');
     DATE_KEYS.forEach((k,di)=>{
@@ -375,85 +481,24 @@ function applyRows(rows){
       const partners=Array.isArray(rows[ri]?.[k+'_p'])? rows[ri][k+'_p'] : []; p.dataset.partners = JSON.stringify(partners);
       const n = partners.length>0 ? partners.length : (parseInt(rows[ri]?.[k+'_1on1'])||0);
       pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`;
+      b.classList.toggle('o2o', n>0);
     });
     fillRightSummary(tr,ri);
   });
   updateTotals();
 }
 
-// === Totals & Matrix ===
-function updateTotals(){
-  DATE_KEYS.forEach((k,di)=>{
-    let g=0,y=0,r=0,guestSum=0;
-    const seen=new Set();
-    [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
-      const cell=tr.querySelectorAll('td')[3+di];
-      const v=cell.querySelector('.status').textContent;
-      if(v==='🟢') g++; else if(v==='🟡') y++; else if(v==='🔴') r++;
-      guestSum += parseInt(cell.querySelector('.guest-input')?.value||'0')||0;
-      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
-      partners.forEach(pj=>{
-        const a=Math.min(ri,pj), b=Math.max(ri,pj);
-        seen.add(`${a}-${b}`);
-      });
-    });
-    const o2o = seen.size;
-    const wrap=document.querySelector(`.totals[data-date="${k}"]`);
-    wrap.innerHTML=`<span>🟢 ${g}</span> <span>🟡 ${y}</span> <span>🔴 ${r}</span> <span>👥 ${guestSum}</span> <span>🤝 ${o2o}</span>`;
-  });
-  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>fillRightSummary(tr,ri));
-  buildMatrix();
+function clearAll(){
+  if(!confirm('清空所有標記與來賓/一對一？（名單不會被刪除）')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  [...document.querySelectorAll('.status')].forEach(b=>{b.setAttribute('aria-label','');b.textContent='';b.classList.remove('o2o');});
+  [...document.querySelectorAll('.guest-input')].forEach(i=>{i.value='0'});
+  [...document.querySelectorAll('.o2o-pill')].forEach(el=>{el.dataset.count='0'; el.textContent='🤝 0';});
+  [...document.querySelectorAll('.pair-btn')].forEach(p=>{p.dataset.partners='[]'});
+  updateTotals();
 }
 
-function fillRightSummary(tr,ri){
-  const cells=tr.querySelectorAll('td'); let present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
-  DATE_KEYS.forEach((k,di)=>{
-    const cell=cells[3+di]; const v=cell.querySelector('.status').textContent;
-    if(v==='🟢'||v==='🟡'){ present++; }
-    const g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
-    const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
-  });
-  const total=DATE_KEYS.length; const attRate= total? Math.round((present/total)*1000)/10 : 0; const guestRate= present? Math.round((guestDays/present)*1000)/10 : 0; const o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0; const perf=Math.round((0.5*attRate + 0.25*guestRate + 0.25*o2oRate)*10)/10; const base=3+DATE_KEYS.length; const vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%']; for(let i=0;i<6;i++){ const td=tr.querySelectorAll('td')[base+i]; td.textContent=vals[i]; td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i]; }
-}
-
-function buildMatrix(){
-  const tbl=document.getElementById('matrix'); if(!tbl) return;
-  // Build counts and detail dates
-  const details = Array.from({length:MEMBERS.length},()=>Array(MEMBERS.length).fill(null).map(()=>new Set()));
-  DATE_KEYS.forEach((k,di)=>{
-    const seenDay = new Set();
-    [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
-      const cell=tr.querySelectorAll('td')[3+di];
-      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
-      partners.forEach(pj=>{
-        const a=Math.min(ri,pj), b=Math.max(ri,pj);
-        const key=`${a}-${b}`;
-        if(!seenDay.has(key)){ seenDay.add(key); details[a][b].add(DATES[di]); details[b][a].add(DATES[di]); }
-      });
-    });
-  });
-
-  let html='<thead><tr><th>成員</th>';
-  MEMBERS.forEach(m=> html+=`<th>${m.name}</th>`);
-  html+='</tr></thead><tbody>';
-  MEMBERS.forEach((m,i)=>{
-    html+=`<tr><th>${m.name}</th>`;
-    MEMBERS.forEach((n,j)=>{
-      if (i === j) { html += '<td class="diag"></td>'; }
-      else {
-        const cnt = details[i][j].size;
-        const cls = cnt>0 ? ' class="lit"' : '';
-        const tip = cnt>0 ? ` title="${[...details[i][j]].join('、')}"` : '';
-        html += `<td${cls}${tip}>${cnt||''}</td>`;
-      }
-    });
-    html+='</tr>';
-  });
-  html+='</tbody>';
-  tbl.innerHTML=html;
-}
-
-// === Export / Print ===
+// === 匯出 CSV ===
 function exportCSV(){
   const headers=['編號','姓名','專業別',...DATES,'出席率','來賓總數','帶來賓比率','一對一次數','一對一比率','總體績效'];
   const lines=[headers.join(',')];
@@ -472,65 +517,104 @@ function exportCSV(){
   const blob=new Blob([bom+lines.join('\\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='核心團成員_10-01_11-05.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
-function printPage(){ window.print(); }
 
-// === Init ===
-function init(){
-  // Try restore members from localStorage
-  try{ const m = JSON.parse(localStorage.getItem(MEMBERS_KEY)||'null'); if(Array.isArray(m) && m.length){ MEMBERS = m; } }catch(e){}
-  buildTable();
-  document.getElementById('csvBtn').addEventListener('click', exportCSV);
-  document.getElementById('printBtn').addEventListener('click', printPage);
-  document.getElementById('importBtn').addEventListener('click',()=>{
-    if(READ_ONLY) return;
-    const dlg = document.getElementById('importDialog');
-    const ta = document.getElementById('importText');
-    ta.value = MEMBERS.map(m=>`${m.id},${m.name},${m.profession}`).join('\\n');
-    dlg.showModal();
-  });
-  document.getElementById('doImport').addEventListener('click',()=>{
-    if(READ_ONLY) return;
-    const ta = document.getElementById('importText');
-    const lines=ta.value.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean);
-    const parsed=[];
-    for(const ln of lines){
-      const parts=ln.split(/\\t|\\s*,\\s*/);
-      if(parts.length>=3){ const id=Number(parts[0])||parsed.length+1; parsed.push({id,name:parts[1],profession:parts.slice(2).join(' ')}); }
-    }
-    if(parsed.length){ MEMBERS=parsed; localStorage.setItem(MEMBERS_KEY, JSON.stringify(MEMBERS)); buildTable(); }
-  });
-
-  // Search
-  document.getElementById('q').addEventListener('input', (e)=>{
-    const term=e.target.value.trim();
+// === 統計 ===
+function updateTotals(){
+  // 每日期合計（來賓總和以人數合計；一對一總數以「不重複配對」計）
+  DATE_KEYS.forEach((k,di)=>{
+    let g=0,y=0,r=0,guestSum=0,o2o=0;
+    const seen=new Set(); // unique pair per day
     [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
-      const hit=!term || (MEMBERS[ri]?.name||'').includes(term) || (MEMBERS[ri]?.profession||'').includes(term);
-      tr.style.display=hit? '':'none';
+      const cell=tr.querySelectorAll('td')[3+di];
+      const btn=cell.querySelector('.status'); const v=btn.textContent;
+      if(v==='🟢') g++; else if(v==='🟡') y++; else if(v==='🔴') r++;
+      guestSum += parseInt(cell.querySelector('.guest-input')?.value||'0')||0;
+      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
+      partners.forEach(pj=>{ const a=Math.min(ri,pj), b=Math.max(ri,pj); const key=`${a}-${b}`; if(!seen.has(key)){ seen.add(key); o2o++; } });
     });
+    const wrap=document.querySelector(`.totals[data-date="${k}"]`);
+    wrap.innerHTML=`<span class="dot">🟢 ${g}</span> <span class="dot">🟡 ${y}</span> <span class="dot">🔴 ${r}</span> <span class="dot">👥 ${guestSum}</span> <span class="dot">🤝 ${o2o}</span>`;
   });
-
-  // Password gate
-  const modal = document.getElementById('pwdModal');
-  const onlyRead = document.getElementById('onlyRead');
-  const ok = document.getElementById('pwdOK');
-  const input = document.getElementById('pwdInput');
-  modal.style.display='flex';
-  onlyRead.onclick = ()=>{ modal.style.display='none'; setReadOnly(true); };
-  ok.onclick = ()=>{
-    if(input.value === '2614'){ modal.style.display='none'; setReadOnly(false); }
-    else { alert('密碼錯誤'); }
-  };
-  document.getElementById('unlockBtn').onclick = ()=>{ modal.style.display='flex'; input.value=''; input.focus(); };
+  // 列統計
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>fillRightSummary(tr,ri));
+  // 矩陣
+  buildMatrix();
 }
 
-init();
+function fillRightSummary(tr,ri){
+  const cells=tr.querySelectorAll('td'); let present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
+  DATE_KEYS.forEach((k,di)=>{
+    const cell=cells[3+di]; const v=cell.querySelector('.status').textContent;
+    if(v==='🟢'||v==='🟡'){ present++; }
+    const g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
+    const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
+  });
+  const total=DATE_KEYS.length; const attRate= total? Math.round((present/total)*1000)/10 : 0; const guestRate= present? Math.round((guestDays/present)*1000)/10 : 0; const o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0; const perf=Math.round((0.5*attRate + 0.25*guestRate + 0.25*o2oRate)*10)/10; const base=3+DATE_KEYS.length; const vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%']; for(let i=0;i<6;i++){ const td=tr.querySelectorAll('td')[base+i]; td.textContent=vals[i]; td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i]; }
+}
+
+// === 矩陣 ===
+function buildMatrix(){
+  const tbl=document.getElementById('matrix'); if(!tbl) return;
+  const seenPerDay = DATE_KEYS.map(()=>new Set());
+  const count=Array.from({length:MEMBERS.length},()=>Array(MEMBERS.length).fill(0));
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    DATE_KEYS.forEach((k,di)=>{
+      const cell=tr.querySelectorAll('td')[3+di];
+      const partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]');
+      partners.forEach(pj=>{
+        const a=Math.min(ri,pj), b=Math.max(ri,pj);
+        const key=`${a}-${b}`;
+        if(!seenPerDay[di].has(key)){ seenPerDay[di].add(key); count[a][b]++; count[b][a]++; }
+      });
+    });
+  });
+  let html='<thead><tr><th>Name</th>';
+  MEMBERS.forEach(m=> html+=`<th>${m.name}</th>`);
+  html+='</tr></thead><tbody>';
+  MEMBERS.forEach((m,i)=>{
+    html+=`<tr><th>${m.name}</th>`;
+    MEMBERS.forEach((n,j)=>{
+      if (i === j) { html += '<td class="diag"></td>'; } else { const val = count[i][j] || 0; const cls = val > 0 ? ' class="lit"' : ''; html += `<td${cls}>${val}</td>`; }
+    });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  tbl.innerHTML=html;
+}
+
+// === 搜尋 ===
+const q=document.getElementById('q');
+q.addEventListener('input',()=>{
+  const term=q.value.trim();
+  [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+    const hit=!term || (MEMBERS[ri]?.name||'').includes(term) || (MEMBERS[ri]?.profession||'').includes(term);
+    tr.style.display=hit? '':'none';
+  });
+});
+
+// === 匯入成員 ===
+const importDialog=document.getElementById('importDialog'); const importBtn=document.getElementById('importBtn'); const doImport=document.getElementById('doImport'); const importText=document.getElementById('importText');
+importBtn.addEventListener('click',()=>{ importText.value='1,徐國華,中藥包裝設備買賣業\\n2,吳冠璋,理財規劃保險業\\n3,鐘姵羚,土地開發業\\n4,李宇晴,市調業\\n5,陳清玉,茶製品批發零售\\n6,林佑儒,蝸牛養殖買賣業\\n7,林彥宏,米糧商\\n8,陳建宏,軟包裝客製化工廠\\n9,江誠仲,海苔批發零售\\n10,李朵嫻,咖啡烘豆業\\n11,鍾昆翰,汽車鍍膜業\\n12,徐孝衡,油品品牌商\\n13,吳典蓉,民事訴訟律師'; importDialog.showModal(); });
+doImport.addEventListener('click',()=>{ const lines=importText.value.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean); const parsed=[]; for(const ln of lines){ const parts=ln.split(/\\t|\\s*,\\s*/); if(parts.length>=3){ const id=Number(parts[0])||parsed.length+1; parsed.push({id,name:parts[1],profession:parts.slice(2).join(' ')}); } } if(parsed.length){ MEMBERS=parsed; localStorage.setItem(MEMBERS_KEY, JSON.stringify(MEMBERS)); buildTable(); updateTotals(); importDialog.close(); } else { alert('未偵測到可用資料，請確認每列有：編號,姓名,專業別'); } });
+
+// === 列印 ===
+function printPage(){ window.print(); }
+
+// 初始化
+buildTable(); updateTotals();
+document.getElementById('saveBtn').addEventListener('click', save);
+document.getElementById('loadBtn').addEventListener('click', load);
+document.getElementById('clearBtn').addEventListener('click', clearAll);
+document.getElementById('csvBtn').addEventListener('click', exportCSV);
+document.getElementById('printBtn').addEventListener('click', printPage);
 </script>
 
-<!-- Firebase（app+firestore compat） -->
+<!-- Firebase CDN (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
-// === Firestore Save/Load ===
+/* === Firestore Sync v2 (robust id + hooks + diagnostics) === */
 (function(){
   const firebaseConfig = {
     apiKey: "AIzaSyDDZYbqfz-A5BcpKmO_TO8ot5AAp4bUeTE",
@@ -542,37 +626,1021 @@ init();
     measurementId: "G-P2QGJ52GKW"
   };
   try{ firebase.initializeApp(firebaseConfig); }catch(e){}
+  try{ firebase.analytics(); }catch(e){}
   const db = firebase.firestore();
-  const COL = "trafficSnapshots";
-  const DOC = "core-team-traffic-v3";
-  const docRef = db.collection(COL).doc(DOC);
+  const SNAP_COLL = "trafficSnapshots";
+  // Map helper: given row object + date index, resolve base key and value
+  function mapRowKeysDual(rowObj, di){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const dispKey = DK[di];           // e.g., "10/01"
+    const isoKey  = DS[di];           // e.g., "2025-10-01"
+    if (rowObj && typeof rowObj==='object'){
+      if (dispKey && (dispKey in rowObj)) return {key: dispKey, val: rowObj[dispKey]};
+      if (isoKey && (isoKey in rowObj))   return {key: isoKey,  val: rowObj[isoKey]};
+      // try MM/DD -> ISO by borrowing year from DS[di]
+      if (dispKey && /\d{2}\/\d{2}/.test(dispKey)){
+        try{
+          const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+          const iso2 = y + "-" + dispKey.replace(/\//g,"-");
+          if (iso2 in rowObj) return {key: iso2, val: rowObj[iso2]};
+        }catch(e){}
+      }
+    }
+    return {key: dispKey||isoKey, val: ""};
+  }
+
+  // After cloud load, fill table using dual-key and (optionally) sync missing MM/DD fields back to Firestore
+  async function autoSyncMMDDIfNeeded(rows){
+    try{
+      const DK = (window.DATE_KEYS||[]);
+      const DS = (window.DATES||[]);
+      if (!Array.isArray(rows) || !DK.length || !DS.length) return;
+      // Build newRows with MM/DD filled from ISO when missing; do not overwrite existing MM/DD values
+      const newRows = rows.map((row)=>{
+        const r = Object.assign({}, row||{});
+        for (let di=0; di<DK.length; di++){
+          const dispKey = DK[di];
+          const isoKey  = DS[di];
+          if (!dispKey) continue;
+          const copy = (src, dst) => {
+            if (r[src] != null && r[src] !== "" && (r[dst] == null || r[dst] === "")) r[dst] = r[src];
+          };
+          copy(isoKey, dispKey);
+          copy(isoKey + "_g", dispKey + "_g");
+          copy(isoKey + "_1on1", dispKey + "_1on1");
+          if (Array.isArray(r[isoKey + "_p"]) && (!Array.isArray(r[dispKey + "_p"]) || r[dispKey + "_p"].length === 0)){
+            r[dispKey + "_p"] = r[isoKey + "_p"];
+          }
+        }
+        return r;
+      });
+      // If nothing changed, skip write
+      let changed = false;
+      for (let i=0;i<rows.length;i++){
+        const a = rows[i]||{}, b = newRows[i]||{};
+        if (JSON.stringify(a) !== JSON.stringify(b)){ changed = true; break; }
+      }
+      if (changed){
+        const snapId = getSnapId();
+        await db.collection(SNAP_COLL).doc(snapId).set({ rows: newRows }, { merge: true });
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(newRows)); }catch(e){}
+        if (window.showToast) window.showToast("已自動補齊 MM/DD 欄位並同步到雲端", "ok");
+        // update in-memory cache too
+        window.__FIRE_LAST_ROWS = newRows;
+        return newRows;
+      }
+      return rows;
+    }catch(e){
+      if (window.showToast) window.showToast("自動補齊 MM/DD 失敗：" + e, "err");
+      return rows;
+    }
+  }
+  // Wait until matrix/table is ready, then apply rows (avoid early apply on empty DOM)
+  function waitForMatrixAndApply(rows){
+    try{
+      const start = Date.now();
+      const limit = 6000; // up to 6s
+      const tick = 160;   // check every 160ms
+      function ready(){
+        return document.getElementById('tbody') || document.querySelector('#matrix table');
+      }
+      if (ready()){
+        try{ applyRows(rows); }catch(e){}
+        return;
+      }
+      const tm = setInterval(()=>{
+        if (ready() || (Date.now() - start > limit)){
+          clearInterval(tm);
+          try{ applyRows(rows); }catch(e){}
+        }
+      }, tick);
+    }catch(e){}
+  }
+  function hardTakeover(rows){
+    try{
+      if (rows){
+        window.__FIRE_LAST_ROWS = rows;
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+      }
+      // Permanently tame legacy window.load: always re-apply cloud rows if invoked
+      (function(){
+        const orig = typeof window.load === "function" ? window.load : null;
+        window.load = function(){
+          try{ if (window.__FIRE_LAST_ROWS && typeof applyRows === "function"){ applyRows(window.__FIRE_LAST_ROWS); return; } }catch(e){}
+          if (orig) return orig.apply(this, arguments);
+        };
+      })();
+      // Replace #loadBtn / [data-action=load] with clean clones that only trigger cloud
+      const sels = ["#loadBtn","[data-action=load]"];
+      sels.forEach(sel=>{
+        document.querySelectorAll(sel).forEach(btn=>{
+          try{
+            const c = btn.cloneNode(true);
+            btn.replaceWith(c);
+            c.addEventListener("click", function(ev){ ev.preventDefault(); ev.stopImmediatePropagation(); loadFromFirestore(); }, true);
+          }catch(e){}
+        });
+      });
+    }catch(e){}
+  }
+  // Aggressive keep-on-screen: repeatedly re-apply for a short window and suppress legacy handlers
+  function cloudHold(rows){
+    try{
+      if (!rows) return;
+      window.__FIRE_LAST_ROWS = rows;
+      // 1) keep localStorage in sync
+      try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+      // 2) disable legacy window.load temporarily
+      const origLoad = typeof window.load === "function" ? window.load : null;
+      if (origLoad){ window.load = function(){}; setTimeout(()=>{ window.load = origLoad; }, 12000); }
+      // 3) global capture to stop other click/change handlers that might overwrite
+      const blocker = function(e){ e.stopImmediatePropagation(); };
+      const evs = ["click","change","input"];
+      evs.forEach(ev=>document.addEventListener(ev, blocker, true));
+      setTimeout(()=>{ evs.forEach(ev=>document.removeEventListener(ev, blocker, true)); }, 3000);
+      // 4) aggressive reapply loop for 3s
+      const t0 = Date.now();
+      (function loop(){
+        try{
+          if (Date.now() - t0 > 3000) return;
+          if (typeof applyRows === "function") applyRows(rows);
+        }catch(e){}
+        setTimeout(loop, 120);
+      })();
+      // 5) also watch DOM rebuilds for 6s
+      try{
+        const stopAt = Date.now() + 6000;
+        const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+        if (target){
+          let tm=null;
+          const ob = new MutationObserver(()=>{
+            if (Date.now()>stopAt){ ob.disconnect(); return; }
+            clearTimeout(tm);
+            tm = setTimeout(()=>{ try{ applyRows(rows); }catch(e){} }, 40);
+          });
+          ob.observe(target, {childList:true, subtree:true});
+          setTimeout(()=>ob.disconnect(), 6200);
+        }
+      }catch(e){}
+    }catch(e){}
+  }
+  function sealCloudRows(rows){
+    try{
+      if (rows) {
+        try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+        window.__FIRE_LAST_ROWS = rows;
+      }
+      const WINDOW_MS = 15000; // 15s hard-protect window
+      const started = Date.now();
+
+      // 1) Temporarily prefer cloud rows via localStorage getter
+      try{
+        const LS = window.localStorage;
+        const nativeGet = LS.getItem.bind(LS);
+        LS.getItem = function(k){
+          try{
+            if (k === window.STORAGE_KEY && window.__FIRE_LAST_ROWS && Date.now()-started < WINDOW_MS){
+              return JSON.stringify(window.__FIRE_LAST_ROWS);
+            }
+          }catch(e){}
+          return nativeGet(k);
+        };
+        setTimeout(()=>{ try{ LS.getItem = nativeGet; }catch(e){} }, WINDOW_MS+200);
+      }catch(e){}
+
+      // 2) Wrap window.load() to avoid wiping cloud data
+      (function(){
+        const orig = typeof window.load === "function" ? window.load : null;
+        window.load = function(){
+          try{
+            if (window.__FIRE_LAST_ROWS && Date.now()-started < WINDOW_MS){
+              if (typeof applyRows === "function") applyRows(window.__FIRE_LAST_ROWS);
+              return; // block legacy local overwrite
+            }
+          }catch(e){}
+          if (orig) return orig.apply(this, arguments);
+        };
+        setTimeout(()=>{ if (orig) window.load = orig; }, WINDOW_MS+200);
+      })();
+
+      // 3) Re-apply after table rebuilds within window
+      (function(){
+        const stopAt = Date.now() + WINDOW_MS;
+        const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+        if (!target) return;
+        let t=null;
+        const ob = new MutationObserver(()=>{
+          if (Date.now() > stopAt) { ob.disconnect(); return; }
+          if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+            clearTimeout(t);
+            t = setTimeout(()=>{ try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }, 40);
+          }
+        });
+        ob.observe(target, {childList:true, subtree:true});
+        setTimeout(()=>ob.disconnect(), WINDOW_MS+300);
+      })();
+    }catch(e){}
+  }
+
+  function getSnapId(){ return "core-team-traffic-v3"; }catch(e){}
+    const sk = (window.STORAGE_KEY || "core-team-traffic");
+    return sk + "-v3";
+  }
+  function setSnapId(id){ try{ localStorage.setItem("FIRE_SNAP_ID", id); }catch(e){} }
+  function getSnapshot(){ if (typeof snapshot === 'function') return snapshot(); return null; }
+
+  var __FIRE_LAST_ROWS=null;
+function applyRows(rows){
+__FIRE_LAST_ROWS = rows;
+    const tbody = document.getElementById('tbody');
+    if (!tbody) return;
+    if (typeof buildTable === 'function') buildTable();
+    const DATE_KEYS = window.DATE_KEYS || [];
+    [...tbody.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells=tr.querySelectorAll('td');
+      DATE_KEYS.forEach((k,di)=>{
+        const cell=cells[3+di];
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const v=rows[ri]?.[k]||''; b.setAttribute('aria-label',v); b.textContent=v;
+        const gval=parseInt(rows[ri]?.[k+'_g'])||0; if(g) g.value=String(gval);
+        const partners=Array.isArray(rows[ri]?.[k+'_p'])? rows[ri][k+'_p'] : []; p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt(rows[ri]?.[k+'_1on1'])||0);
+        pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`;
+        b.classList.toggle('o2o', n>0);
+      });
+      if (typeof fillRightSummary === 'function') fillRightSummary(tr,ri);
+    });
+    if (typeof updateTotals === 'function') updateTotals();
+  }
 
   async function saveToFirestore(){
-    if(READ_ONLY){ alert('🔒 目前為讀取模式，請先解鎖'); return; }
-    const rows = snapshot();
-    const data = { rows, members: MEMBERS, dateKeys: DATE_KEYS, updatedAt: new Date().toISOString() };
-    await docRef.set(data);
-    alert("✅ 已寫入雲端");
+    const rows = getSnapshot();
+    if (!rows){ showToast("無法擷取快照：snapshot() 不存在。", "ok"); return; }
+    const snapId = getSnapId();
+    const payload = {
+      rows,
+      members: (window.MEMBERS || []),
+      dateKeys: (window.DATE_KEYS || []),
+      dates: (window.DATES || []),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      note: "saved from v3.2 locked tidy page"
+    };
+    await db.collection(SNAP_COLL).doc(snapId).set(payload, { merge: true });
+    try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); }catch(e){}
+    setSnapId(snapId);
+    showToast("✅ 已存到 Firestore\n路徑: " + SNAP_COLL + "/" + snapId, "ok");
   }
+
   async function loadFromFirestore(){
-    const snap = await docRef.get();
-    if(!snap.exists){ alert("⚠️ 雲端尚無資料"); return; }
-    const data = snap.data() || {};
-    if (Array.isArray(data.members) && data.members.length){ MEMBERS = data.members; }
-    buildTable();
-    if (Array.isArray(data.rows)){ applyRows(data.rows); }
-    alert("✅ 已從雲端讀回");
+    const snapId = getSnapId();
+    const docRef = db.collection(SNAP_COLL).doc(snapId);
+    const doc = await docRef.get();
+    if (doc.exists){
+      try{ showToast("已連線到 Firestore："+SNAP_COLL+"/"+getSnapId(), "ok"); }catch(e){}
+      const data = doc.data() || {};
+      if (Array.isArray(data.members) && data.members.length){
+        try{ window.MEMBERS = data.members; localStorage.setItem(window.MEMBERS_KEY, JSON.stringify(window.MEMBERS)); }catch(e){}
+      }
+      if (Array.isArray(data.rows)){
+        applyRows(data.rows);
+        try{ localStorage.setItem(window.STORAGE_KEY, JSON.stringify(data.rows)); }catch(e){}
+        // Re-apply once if table gets rebuilt shortly after
+        (function(){
+          var once=true; var t0=Date.now();
+          var tbody=document.getElementById('tbody'); if(!tbody) return;
+          var mo=new MutationObserver(function(){
+            if(once && Date.now()-t0<3000 && __FIRE_LAST_ROWS){ applyRows(__FIRE_LAST_ROWS); once=false; mo.disconnect(); }
+          });
+          mo.observe(tbody.parentElement||document.body,{childList:true,subtree:true});
+          setTimeout(function(){ try{ mo.disconnect(); }catch(e){} }, 3500);
+        })();
+        showToast("✅ 已從 Firestore 讀取\n路徑: " + SNAP_COLL + "/" + snapId, "ok");
+        return;
+      }
+      showToast("⚠️ 雲端文件存在，但 rows 欄位是空的。", "ok");
+    }else{
+      showToast("⚠️ 找不到雲端文件: " + SNAP_COLL + "/" + snapId + "\n將回退讀本機。", "ok");
+      if (typeof load === 'function'){ load(); }
+    }
   }
 
-  window.saveToFirestore = saveToFirestore;
-  window.loadFromFirestore = loadFromFirestore;
+  function hookButtons(){
+    const ids = [["saveBtn", saveToFirestore], ["loadBtn", loadFromFirestore]];
+    ids.forEach(([id, fn])=>{
+      const el=document.getElementById(id);
+      if (el){ el.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); fn().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); }); }
+    });
+    // Fallback by text content
+    if (!document.getElementById("saveBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/儲存|保存|Save/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+    }
+    if (!document.getElementById("loadBtn")){
+      const b=[...document.querySelectorAll("button, a")].find(b=>/讀取|載入|Load/i.test(b.textContent||""));
+      if (b) b.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore().catch(err=>showToast("Firestore 錯誤: "+err), "ok"); });
+    }
+  }
 
-  document.getElementById('cloudSave').addEventListener('click', saveToFirestore);
-  document.getElementById('cloudLoad').addEventListener('click', loadFromFirestore);
+  document.addEventListener("DOMContentLoaded", function(){ setTimeout(hookButtons, 500); });
+
+  window.__fireSnap = { saveToFirestore, loadFromFirestore };
+  // Guard: neutralize legacy handlers on load/save buttons by cloning them once at DOM ready
+  document.addEventListener("DOMContentLoaded", function(){
+    ["#saveBtn","[data-action=save]","#loadBtn","[data-action=load]"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(btn=>{
+        try{
+          const c = btn.cloneNode(true);
+          btn.replaceWith(c);
+          if (sel.includes("save")) c.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); saveToFirestore(); }, true);
+          if (sel.includes("load")) c.addEventListener("click", e=>{ e.preventDefault(); e.stopImmediatePropagation(); loadFromFirestore(); }, true);
+        }catch(e){}
+      });
+    });
+  });
+  // Guard: if user clicked "讀取" for cloud, neutralize legacy load() briefly
+  (function(){
+    const origLoad = typeof window.load === "function" ? window.load : null;
+    document.addEventListener("click", function(e){
+      const t = e.target;
+      if (!t) return;
+      if (t.closest && (t.closest("#loadBtn") || t.closest("[data-action='load']"))) {
+        try{ window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now(); }catch(e){}
+        if (origLoad){
+          window.load = function(){ /* blocked during cloud intent */ };
+          setTimeout(()=>{ window.load = origLoad; }, 15000);
+        }
+      }
+    }, true);
+  })();
+})();
+</script>
+<script>
+(function(){
+  const btn=document.getElementById("forceApplyBtn");
+  if(!btn) return;
+  btn.addEventListener("click", function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      const rows = window.__FIRE_LAST_ROWS;
+      if (!rows){ return window.showToast ? showToast("沒有可套用的雲端 rows", "warn") : null; }
+      if (!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+      if (typeof window.applyRows==='function'){ applyRows(rows); }
+      if (window.showToast) showToast("已強制套用雲端 rows", "ok");
+    }catch(err){
+      if (window.showToast) showToast("強制套用失敗：" + err, "err");
+    }
+  }, true);
 })();
 </script>
 
-<!-- RWD toggles -->
+
+
+<script>
+/* === CloudRead Stabilizer v1 === */
+(function(){
+  // Set intent when clicking "讀取/載入/Load" buttons
+  function markIntent(){
+    window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now();
+  }
+  document.addEventListener("DOMContentLoaded", function(){
+    // ID-based
+    ["#loadBtn","[data-action='load']"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>{
+        el.addEventListener("click", markIntent, true);
+      });
+    });
+    // Text fallback
+    Array.from(document.querySelectorAll("button,a")).forEach(el=>{
+      if (/讀取|載入|Load/i.test(el.textContent||"")) {
+        el.addEventListener("click", markIntent, true);
+      }
+    });
+  });
+
+  // Patch applyRows to capture latest rows and persist to localStorage when intent is set
+  (function(){
+    const prev = window.applyRows;
+    if (typeof prev === "function"){
+      window.applyRows = function(rows){
+        try {
+          window.__FIRE_LAST_ROWS = rows;
+          if (window.__FIRE_FROM_CLOUD_INTENT_AT && Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < 8000) {
+            try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+            startReapplyWatcher();
+          }
+        } catch(e) {}
+        return prev.apply(this, arguments);
+      };
+    }
+  })();
+
+  // For a short window, prefer cloud rows over localStorage when someone reads STORAGE_KEY
+  (function(){
+    try{
+      const LS = window.localStorage;
+      if (!LS) return;
+      const nativeGet = LS.getItem.bind(LS);
+      LS.getItem = function(k){
+        try{
+          if (k === window.STORAGE_KEY &&
+              window.__FIRE_LAST_ROWS &&
+              window.__FIRE_FROM_CLOUD_INTENT_AT &&
+              Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < 8000){
+            return JSON.stringify(window.__FIRE_LAST_ROWS);
+          }
+        }catch(e){}
+        return nativeGet(k);
+      };
+    }catch(e){}
+  })();
+
+  // Observe table rebuild shortly after cloud load and re-apply once
+  window.startReapplyWatcher = function(){
+    try{
+      const stopAt = Date.now() + 4000;
+      const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+      if (!target) return;
+      const ob = new MutationObserver(()=>{
+        if (Date.now() > stopAt) { ob.disconnect(); return; }
+        if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+          try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){}
+        }
+      });
+      ob.observe(target, {childList:true, subtree:true});
+      setTimeout(()=>ob.disconnect(), 4200);
+    }catch(e){}
+  };
+})();
+</script>
+
+
+<script>
+/* === Edit Gate v1 (default read-only; password to edit) === */
+(function(){
+  // Config
+  const PASS = "2614";
+  const ALLOW_SELECTORS = [
+    "#loadBtn", "[data-action='load']",
+    "#saveBtn", "[data-action='save']",
+    "#editToggleBtn", "#editBar *",
+    "a[href]", "details", "summary"
+  ];
+
+  // State
+  let editing = false;
+  function isAllowed(target){
+    return ALLOW_SELECTORS.some(sel => target.closest(sel));
+  }
+
+  // Intercept interactions: if not editing, block actions inside matrix & form controls
+  const blockSelectors = "input, textarea, select, button, [contenteditable], #matrix, #matrix *";
+  function gateHandler(e){
+    if (editing) return;
+    const t = e.target;
+    if (!t) return;
+    if (isAllowed(t)) return; // allow load/save/edit buttons
+    if (t.closest(blockSelectors)){
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  ["click","dblclick","mousedown","pointerdown","keydown","input","change","touchstart"].forEach(ev=>{
+    document.addEventListener(ev, gateHandler, true);
+  });
+
+  // Toggle edit with password
+  const btn = document.getElementById("editToggleBtn");
+  function refreshUI(){
+    btn.classList.toggle("on", editing);
+    btn.textContent = editing ? "編輯中" : "編輯";
+    documentElement.classList.toggle("editing", editing);
+  }
+  btn.addEventListener("click", ()=>{
+    if (!editing){
+      const v = window.prompt("");
+      if (v === PASS){ editing = true; refreshUI(); }
+    }else{
+      editing = false; refreshUI();
+    }
+  });
+  refreshUI();
+})();
+</script>
+
+
+<script>
+/* === CloudRead Stabilizer v1.2 (longer window + force re-apply) === */
+(function(){
+  const WINDOW_MS = 12000; // 12s window to resist overwrites
+
+  function markIntent(){ window.__FIRE_FROM_CLOUD_INTENT_AT = Date.now(); }
+  document.addEventListener("DOMContentLoaded", function(){
+    ["#loadBtn","[data-action='load']"].forEach(sel=>{
+      document.querySelectorAll(sel).forEach(el=>el.addEventListener("click", markIntent, true));
+    });
+    Array.from(document.querySelectorAll("button,a")).forEach(el=>{
+      if (/讀取|載入|Load/i.test(el.textContent||"")) el.addEventListener("click", markIntent, true);
+    });
+  });
+
+  // Patch applyRows to cache rows & persist to local when cloud intent exists
+  (function(){
+    const prev = window.applyRows;
+    if (typeof prev === "function"){
+      window.applyRows = function(rows){
+        try {
+          window.__FIRE_LAST_ROWS = rows;
+          if (window.__FIRE_FROM_CLOUD_INTENT_AT && Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < WINDOW_MS) {
+            try { localStorage.setItem(window.STORAGE_KEY, JSON.stringify(rows)); } catch(e) {}
+            startReapplyWatcher();
+          }
+        } catch(e) {}
+        return prev.apply(this, arguments);
+      };
+    }
+  })();
+
+  // Shim localStorage.getItem to prefer cloud rows during the window
+  (function(){
+    try{
+      const LS = window.localStorage;
+      if (!LS) return;
+      const nativeGet = LS.getItem.bind(LS);
+      LS.getItem = function(k){
+        try{
+          if (k === window.STORAGE_KEY &&
+              window.__FIRE_LAST_ROWS &&
+              window.__FIRE_FROM_CLOUD_INTENT_AT &&
+              Date.now() - window.__FIRE_FROM_CLOUD_INTENT_AT < WINDOW_MS){
+            return JSON.stringify(window.__FIRE_LAST_ROWS);
+          }
+        }catch(e){}
+        return nativeGet(k);
+      };
+    }catch(e){}
+  })();
+
+  // Re-apply rows if DOM rebuilds shortly after cloud read
+  window.startReapplyWatcher = function(){
+    try{
+      const stopAt = Date.now() + 6000;
+      const target = document.getElementById('tbody') || document.querySelector('#matrix') || document.body;
+      if (!target) return;
+      let t=null;
+      const ob = new MutationObserver(()=>{
+        if (Date.now() > stopAt) { ob.disconnect(); return; }
+        if (window.__FIRE_LAST_ROWS && typeof applyRows === 'function'){
+          clearTimeout(t);
+          t = setTimeout(()=>{ try{ applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }, 40);
+        }
+      });
+      ob.observe(target, {childList:true, subtree:true});
+      setTimeout(()=>ob.disconnect(), 6200);
+    }catch(e){}
+  };
+})();
+</script>
+
+
+<script>
+/* === applyRows override: dual key (MM/DD & ISO) mapper === */
+(function(){
+  const prev = window.applyRows;
+  window.applyRows = function(rows){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const tbody = document.getElementById('tbody');
+    if (!tbody && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    [...(document.getElementById('tbody')||{querySelectorAll:()=>[]}).querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells = tr.querySelectorAll('td');
+      DK.forEach((k,di)=>{
+        const cell=cells[3+di]; if(!cell) return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const rowObj = rows && rows[ri] || {};
+        // resolve key
+        const dispKey = DK[di];
+        const isoKey  = DS[di];
+        let baseKey = null;
+        if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, dispKey)) baseKey = dispKey;
+        else if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, isoKey)) baseKey = isoKey;
+        else if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+          try{
+            const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+            const iso2 = y + "-" + String(dispKey).replace(/\//g,"-");
+            if (Object.prototype.hasOwnProperty.call(rowObj, iso2)) baseKey = iso2;
+          }catch(e){}
+        }
+        if (!baseKey) baseKey = dispKey || isoKey || "";
+        // values
+        const v = rowObj[baseKey] || "";
+        if (b){ b.setAttribute('aria-label', v); b.textContent = v; }
+        const gval = parseInt(rowObj[baseKey + '_g']) || 0; if (g) g.value = String(gval);
+        const partners = Array.isArray(rowObj[baseKey + '_p']) ? rowObj[baseKey + '_p'] : [];
+        if (p) p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt(rowObj[baseKey + '_1on1'])||0);
+        if (pill){ pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`; }
+        if (b) b.classList.toggle('o2o', n>0);
+      });
+      if (typeof window.fillRightSummary === 'function') try{ fillRightSummary(tr,ri); }catch(e){}
+    });
+    if (typeof window.updateTotals === 'function') try{ updateTotals(); }catch(e){}
+    return rows;
+  };
+  // If there is a cached cloud rows, apply once
+  if (window.__FIRE_LAST_ROWS){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }
+})();
+</script>
+
+
+<script>
+/* === applyRows override: dual key (MM/DD & ISO) mapper === */
+(function(){
+  const prev = window.applyRows;
+  window.applyRows = function(rows){
+    const DK = (window.DATE_KEYS||[]);
+    const DS = (window.DATES||[]);
+    const tbody = document.getElementById('tbody');
+    if (!tbody && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    const TB = document.getElementById('tbody');
+    if (!TB) return rows;
+    [...TB.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells = tr.querySelectorAll('td');
+      DK.forEach((_,di)=>{
+        const cell=cells[3+di]; if(!cell) return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const rowObj = rows && rows[ri] || {};
+        // dual-key resolve
+        const got = (function(){
+          const dispKey = DK[di];
+          const isoKey  = DS[di];
+          if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, dispKey)) return {key: dispKey, val: rowObj[dispKey]};
+          if (rowObj && Object.prototype.hasOwnProperty.call(rowObj, isoKey))  return {key: isoKey,  val: rowObj[isoKey]};
+          if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+            try{
+              const y = (isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey)) ? isoKey.slice(0,4) : String(new Date().getFullYear());
+              const iso2 = y + "-" + String(dispKey).replace(/\//g,"-");
+              if (Object.prototype.hasOwnProperty.call(rowObj, iso2)) return {key: iso2, val: rowObj[iso2]};
+            }catch(e){}
+          }
+          return {key: dispKey||isoKey, val: ""};
+        })();
+        const baseKey = got.key;
+        const v = got.val || "";
+        if (b){ b.setAttribute('aria-label', v); b.textContent = v; }
+        const gval = parseInt((rowObj||{})[baseKey + '_g']) || 0; if (g) g.value = String(gval);
+        const partners = Array.isArray((rowObj||{})[baseKey + '_p']) ? (rowObj||{})[baseKey + '_p'] : [];
+        if (p) p.dataset.partners = JSON.stringify(partners);
+        const n = partners.length>0 ? partners.length : (parseInt((rowObj||{})[baseKey + '_1on1'])||0);
+        if (pill){ pill.dataset.count = String(n); pill.textContent = `🤝 ${n}`; }
+        if (b) b.classList.toggle('o2o', n>0);
+      });
+      if (typeof window.fillRightSummary === 'function') try{ fillRightSummary(tr,ri); }catch(e){}
+    });
+    if (typeof window.updateTotals === 'function') try{ updateTotals(); }catch(e){}
+    return rows;
+  };
+})();
+</script>
+
+<!-- === Cloud Debug Panel + Fixed DocId + Force Apply === -->
+<style>
+#__toastRoot{position:fixed;right:16px;top:16px;z-index:2147483647;display:flex;flex-direction:column;gap:8px}
+.toast{background:#111827;color:#fff;border-radius:10px;padding:10px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);opacity:.98}
+.toast.ok{background:#065f46}.toast.warn{background:#92400e}.toast.err{background:#7f1d1d}
+#cloudDiag{position:fixed;bottom:16px;right:16px;background:#0b1020;color:#e5f0ff;border:1px solid #3b82f6;border-radius:12px;padding:10px 12px;z-index:2147483646;box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px;min-width:260px}
+#cloudDiag h4{margin:0 0 6px 0;font-size:12px;font-weight:700;color:#93c5fd}
+#cloudDiag pre{margin:6px 0;max-height:140px;overflow:auto;background:#0a0f1a;padding:6px 8px;border-radius:8px}
+#cloudDiag .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#cloudDiag button{padding:4px 8px;border:1px solid #93c5fd;background:#0a1222;color:#cfe1ff;border-radius:8px;cursor:pointer}
+#cloudDiag small{opacity:.85}
+</style>
+<div id="__toastRoot"></div>
+<div id="cloudDiag" role="status" aria-live="polite">
+  <h4>雲端診斷面板</h4><button id="cd_min_btn" class="minbtn" title="最小化">–</button>
+  <div class="row"><span>文件路徑</span><small id="cd_path">trafficSnapshots/core-team-traffic-v3</small></div>
+  <div class="row"><span>rows 長度</span><small id="cd_len">-</small></div>
+  <div class="row"><span>含資料？</span><small id="cd_has">-</small></div>
+  <div class="row"><span>第一筆鍵</span><small id="cd_keys">-</small></div>
+  <div class="row"><span></span><button id="cd_force">強制套用雲端</button></div>
+  <pre id="cd_preview">（成功讀取後會顯示前1筆內容）</pre>
+</div>
+<script>
+/* —— 小工具 —— */
+function showToast(m,t){try{const r=document.getElementById("__toastRoot");const e=document.createElement("div");e.className="toast "+(t||"ok");e.innerHTML=m;r.appendChild(e);setTimeout(()=>{e.style.transition="opacity .25s";e.style.opacity="0";setTimeout(()=>e.remove(),260)},2200)}catch(e){}}
+function __setTxt(id,val){const el=document.getElementById(id); if(el) el.textContent=String(val);}
+function __keys(o){try{return Object.keys(o||{}).slice(0,8).join(", ");}catch(e){return "-";}}
+function __pretty(o){try{return JSON.stringify(o,null,2);}catch(e){return String(o);}}
+function __hasRows(rows){if(!Array.isArray(rows))return false;for(let i=0;i<rows.length;i++){if(rows[i]&&Object.keys(rows[i]).length)return true}return false;}
+window.__showCloudDiag=function(rows,path){
+  __setTxt('cd_path', path||'trafficSnapshots/core-team-traffic-v3');
+  __setTxt('cd_len', Array.isArray(rows)? rows.length : '非陣列');
+  __setTxt('cd_has', __hasRows(rows)? '是' : '否');
+  __setTxt('cd_keys', Array.isArray(rows)&&rows[0]? __keys(rows[0]) : '-');
+  const pv=document.getElementById('cd_preview');
+  if(pv) pv.textContent = Array.isArray(rows)&&rows[0]? __pretty(rows[0]) : '（沒有可顯示的內容）';
+};
+/* 固定 docId：trafficSnapshots/core-team-traffic-v3 */
+(function(){
+  if(typeof getSnapId!=="function"){
+    window.getSnapId=function(){ return "core-team-traffic-v3"; };
+  }else{
+    const _g=getSnapId; window.getSnapId=function(){ try{return "core-team-traffic-v3";}catch(e){return _g();} };
+  }
+})();
+/* MM/DD 與 ISO 互通的 applyRows 覆寫（保證能吃到 2025-10-01 或 10/01） */
+(function(){
+  const prev=window.applyRows;
+  window.applyRows=function(rows){
+    const DK=window.DATE_KEYS||[];   // 10/01
+    const DS=window.DATES||[];       // 2025-10-01
+    if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+    const TB=document.getElementById('tbody'); if(!TB) return rows;
+    [...TB.querySelectorAll('tr')].forEach((tr,ri)=>{
+      const cells=tr.querySelectorAll('td');
+      DK.forEach((dispKey,di)=>{
+        const isoKey=DS[di]; const cell=cells[3+di]; if(!cell)return;
+        const b=cell.querySelector('.status');
+        const g=cell.querySelector('.guest-input');
+        const p=cell.querySelector('.pair-btn');
+        const pill=cell.querySelector('.o2o-pill');
+        const row=rows && rows[ri] || {};
+        let baseKey=null;
+        if(Object.prototype.hasOwnProperty.call(row, dispKey)) baseKey=dispKey;
+        else if(Object.prototype.hasOwnProperty.call(row, isoKey)) baseKey=isoKey;
+        else if(/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+          const y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+          const iso2=y+"-"+String(dispKey).replace(/\//g,"-");
+          if(Object.prototype.hasOwnProperty.call(row, iso2)) baseKey=iso2;
+        }
+        if(!baseKey) baseKey=dispKey||isoKey||"";
+        const v=row[baseKey] || ""; if(b){ b.setAttribute('aria-label',v); b.textContent=v; }
+        const gval=parseInt(row[baseKey+'_g'])||0; if(g) g.value=String(gval);
+        const partners=Array.isArray(row[baseKey+'_p'])? row[baseKey+'_p'] : [];
+        if(p) p.dataset.partners=JSON.stringify(partners);
+        const n=partners.length>0? partners.length : (parseInt(row[baseKey+'_1on1'])||0);
+        if(pill){ pill.dataset.count=String(n); pill.textContent=`🤝 ${n}`; }
+        if(b) b.classList.toggle('o2o', n>0);
+      });
+      if(typeof window.fillRightSummary==='function'){ try{ fillRightSummary(tr,ri); }catch(e){} }
+    });
+    if(typeof window.updateTotals==='function'){ try{ updateTotals(); }catch(e){} }
+    return rows;
+  };
+  if(prev && window.__FIRE_LAST_ROWS){ try{ window.applyRows(window.__FIRE_LAST_ROWS); }catch(e){} }
+})();
+/* 綁定「雲端儲存/讀取」：確保走 Firestore (__fireSnap) */
+(function(){
+  function bind(btn, fn){
+    if(!btn || !fn) return;
+    const c=btn.cloneNode(true); btn.replaceWith(c);
+    c.addEventListener('click', function(e){
+      e.preventDefault(); e.stopImmediatePropagation();
+      try{ const p=fn(); if(p && p.catch){ p.catch(err=>showToast("Firestore 錯誤："+err,"err")); } }
+      catch(err){ showToast("Firestore 執行失敗："+err,"err"); }
+    }, true);
+  }
+  function tryBind(){
+    const s=document.getElementById('saveBtn');
+    const l=document.getElementById('loadBtn');
+    const snap=window.__fireSnap;
+    if(!snap) return false;
+    if(s) bind(s, snap.saveToFirestore || snap.save);
+    if(l) bind(l, snap.loadFromFirestore || snap.load);
+    return !!(s||l);
+  }
+  let t=0, iv=setInterval(()=>{ t++; if(tryBind()||t>40) clearInterval(iv); }, 200);
+  try{
+    const ob=new MutationObserver(()=>tryBind());
+    ob.observe(document.body, {childList:true, subtree:true});
+    setTimeout(()=>ob.disconnect(), 20000);
+  }catch(e){}
+})();
+/* 讀取後更新診斷面板 + 強制套用鈕 */
+(function(){
+  const btn=document.getElementById('cd_force');
+  if(btn) btn.addEventListener('click', function(e){
+    e.preventDefault(); e.stopImmediatePropagation();
+    try{
+      const rows=window.__FIRE_LAST_ROWS;
+      if(!rows) return showToast("沒有快取 rows，請先按【雲端讀取】","warn");
+      if(!document.getElementById('tbody') && typeof window.buildTable==='function'){ try{ buildTable(); }catch(e){} }
+      if(typeof window.applyRows==='function'){ applyRows(rows); }
+      showToast("已強制套用雲端 rows","ok");
+    }catch(err){ showToast("強制套用失敗："+err,"err"); }
+  }, true);
+  function hook(){
+    const s=window.__fireSnap;
+    if(!s || typeof s.loadFromFirestore!=="function") return false;
+    const orig=s.loadFromFirestore;
+    s.loadFromFirestore=async function(){
+      const res=await orig.apply(this, arguments);
+      const path="trafficSnapshots/"+(typeof getSnapId==='function'? getSnapId() : 'core-team-traffic-v3');
+      try{ window.__showCloudDiag(window.__FIRE_LAST_ROWS, path); }catch(e){}
+      return res;
+    };
+    // 首次若已有 rows 就顯示
+    try{ if(window.__FIRE_LAST_ROWS){ window.__showCloudDiag(window.__FIRE_LAST_ROWS, "trafficSnapshots/"+getSnapId()); } }catch(e){}
+    return true;
+  }
+  let n=0, timer=setInterval(()=>{ n++; if(hook()||n>40) clearInterval(timer); }, 200);
+})();
+</script>
+<!-- === /Cloud Debug Panel === -->
+
+
+<script>
+// === DateKey Scanner: 若頁面沒有 DATE_KEYS/DATES，從畫面文字自動推斷 ===
+(function(){
+  function visible(el){
+    if(!el) return false;
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width>0 && rect.height>0;
+  }
+  function uniq(arr){ return Array.from(new Set(arr)); }
+  function pickDateTexts(){
+    const mmdd = [];
+    const all = document.querySelectorAll('th, .date, .date-label, .header, span, div, button');
+    const re = /^\s*(\d{2})\/(\d{2})\s*$/;
+    all.forEach(el=>{
+      const t = (el.textContent||"").trim();
+      if(re.test(t) && visible(el)){
+        mmdd.push(t);
+      }
+    });
+    const arr = uniq(mmdd).slice(0, 12);
+    return arr;
+  }
+  function ensureKeys(){
+    if (Array.isArray(window.DATE_KEYS) && window.DATE_KEYS.length) return true;
+    const mmdd = pickDateTexts();
+    if (mmdd.length >= 4){
+      window.DATE_KEYS = mmdd;
+      const y = String(new Date().getFullYear());
+      window.DATES = mmdd.map(s=> y + "-" + s.replace("/", "-"));
+      if (window.showToast) showToast("偵測到日期鍵："+mmdd.join(", "), "ok");
+      return true;
+    }
+    return false;
+  }
+  let tries = 0;
+  const iv = setInterval(function(){
+    tries++;
+    if (ensureKeys() || tries>20) clearInterval(iv);
+  }, 400);
+  document.addEventListener("DOMContentLoaded", function(){ setTimeout(ensureKeys, 300); });
+})();
+</script>
+
+
+<!-- ===== Force Render Layer for GitHub Pages ===== -->
+<script>
+(function(){
+  // Toast (lightweight)
+  function toast(msg){
+    try{
+      var id="__toastRoot"; var root=document.getElementById(id);
+      if(!root){ root=document.createElement("div"); root.id=id; root.style.cssText="position:fixed;right:16px;top:16px;z-index:999999;display:flex;flex-direction:column;gap:8px"; document.body.appendChild(root); }
+      var el=document.createElement("div"); el.style.cssText="background:#111827;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2)"; el.textContent=msg;
+      root.appendChild(el); setTimeout(function(){ el.style.opacity="0"; el.style.transition="opacity .25s"; setTimeout(function(){ el.remove(); }, 260); }, 1800);
+    }catch(e){}
+  }
+
+  // 推斷日期鍵（若頁面沒提供 DATE_KEYS/DATES）
+  function tryInferDateKeys(){
+    if (Array.isArray(window.DATE_KEYS) && window.DATE_KEYS.length && Array.isArray(window.DATES) && window.DATES.length) return true;
+    var re=/^\s*(\d{2})\/(\d{2})\s*$/;
+    var mmdd=[];
+    document.querySelectorAll('th,button,div,span').forEach(function(el){
+      var t=(el.textContent||"").trim();
+      if(re.test(t)) mmdd.push(t);
+    });
+    mmdd = Array.from(new Set(mmdd));
+    if(mmdd.length>=4){
+      window.DATE_KEYS = mmdd.slice(0,8);
+      var y = String(new Date().getFullYear());
+      window.DATES = window.DATE_KEYS.map(function(s){ return y+"-"+s.replace("/","-"); });
+      toast("偵測日期鍵："+window.DATE_KEYS.join(", "));
+      return true;
+    }
+    return false;
+  }
+
+  // 將 rows 寫入畫面（盡量相容不同 DOM）
+  function forceRender(rows){
+    if(!Array.isArray(rows)) return false;
+    var DK = window.DATE_KEYS || []; // 10/01
+    var DS = window.DATES || [];     // 2025-10-01
+    // 嘗試抓表格
+    var TB = document.getElementById('tbody') || document.querySelector('tbody.data-body, tbody');
+    if(!TB){ return false; }
+
+    var trs = TB.querySelectorAll('tr');
+    trs.forEach(function(tr, ri){
+      var row = rows[ri] || {};
+      var cells = tr.querySelectorAll('td');
+      DK.forEach(function(dispKey, di){
+        var isoKey = DS[di];
+        var colIdx = 3+di; // 以你既有結構為準（前3欄為 # / 姓名 / 專業別）
+        var cell = cells[colIdx]; if(!cell) return;
+        var key = null;
+        if (Object.prototype.hasOwnProperty.call(row, dispKey)) key = dispKey;
+        else if (Object.prototype.hasOwnProperty.call(row, isoKey)) key = isoKey;
+        else {
+          // 再試把 mm/dd 轉 iso
+          if (/^\d{2}\/\d{2}$/.test(String(dispKey||""))){
+            var y=(isoKey && /^\d{4}-\d{2}-\d{2}$/.test(isoKey))? isoKey.slice(0,4) : String(new Date().getFullYear());
+            var iso2=y+"-"+String(dispKey).replace(/\//g,"-");
+            if (Object.prototype.hasOwnProperty.call(row, iso2)) key = iso2;
+          }
+        }
+        if(!key) return;
+
+        var lamp = row[key] || "";                       // 🟢🟡🔴
+        var g    = parseInt(row[key+"_g"]) || 0;         // 貴賓數
+        var o2o  = parseInt(row[key+"_1on1"]) || 0;      // 配對數（或 1on1）
+        var partners = Array.isArray(row[key+"_p"])? row[key+"_p"] : [];
+
+        // 優先找既有元素
+        var status = cell.querySelector('.status');
+        if (status){ status.textContent = lamp; status.setAttribute('aria-label', lamp); }
+        var gInput = cell.querySelector('.guest-input');
+        if (gInput) gInput.value = String(g);
+        var pill   = cell.querySelector('.o2o-pill');
+        if (pill){ var n = partners.length>0 ? partners.length : o2o; pill.dataset.count = String(n); pill.textContent = "🤝 "+n; }
+        var pairBtn = cell.querySelector('.pair-btn');
+        if (pairBtn) pairBtn.dataset.partners = JSON.stringify(partners);
+
+        // 如果以上找不到元素，就直接把內容塞進 cell（保底）
+        if (!status && !gInput && !pill){
+          cell.innerHTML = '<div class="fr-cell"><span class="lamp">'+(lamp||'')+'</span>' +
+                           '<span class="mini">👥'+o2o+'</span>' +
+                           '<span class="mini">🧑‍🦱'+g+'</span></div>';
+          var miniCss = document.getElementById('fr-mini-css');
+          if(!miniCss){
+            miniCss = document.createElement('style'); miniCss.id='fr-mini-css';
+            miniCss.textContent = '.fr-cell{display:flex;gap:8px;align-items:center;justify-content:center} .fr-cell .mini{opacity:.85;font-size:12px}';
+            document.head.appendChild(miniCss);
+          }
+        }
+      });
+    });
+
+    // 更新總計（若有）
+    try{ if(typeof window.updateTotals==='function') window.updateTotals(); }catch(e){}
+    return true;
+  }
+
+  // 主流程：等待 rows、再等待表格與 applyRows；若一直等不到就強制渲染
+  function bootWithRows(rows){
+    var tries = 0;
+    var applied = false;
+    var iv = setInterval(function(){
+      tries++;
+      if (!applied && typeof window.applyRows === 'function' && document.getElementById('tbody')){
+        try{ window.applyRows(rows); applied = true; toast("已透過 applyRows 渲染"); }catch(e){ console.error(e); }
+      }
+      if (!applied && forceRender(rows)){
+        applied = true; toast("已強制渲染");
+      }
+      if (applied || tries > 40){ clearInterval(iv); }
+    }, 500);
+  }
+
+  // 監看 __FIRE_LAST_ROWS 被設定
+  try{
+    var _rows = null;
+    Object.defineProperty(window, "__FIRE_LAST_ROWS", {
+      set: function(v){ _rows = v; tryInferDateKeys(); bootWithRows(v); },
+      get: function(){ return _rows; }
+    });
+  }catch(e){}
+
+  // 若 Firebase 讀取已做完，直接進入（保險）
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(function(){
+      tryInferDateKeys();
+      if (Array.isArray(window.__FIRE_LAST_ROWS)){ bootWithRows(window.__FIRE_LAST_ROWS); }
+    }, 300);
+  });
+})();
+</script>
+<!-- ===== /Force Render Layer ===== -->
+
+
+<div id="cd_fab" aria-label="開啟雲端診斷">診</div>
 <div id="rwd_fab_bar" aria-label="RWD tools">
   <div id="rwd_fab_mobile" class="fab" title="手機版切換">📱</div>
   <div id="rwd_fab_zoom" class="fab" title="縮放">🔍</div>
@@ -582,144 +1650,81 @@ init();
   <input id="rwd_zoom_range" type="range" min="0.75" max="1.4" step="0.05" value="1" />
   <span id="rwd_zoom_val">100%</span>
 </div>
+
+
 <script>
 (function(){
-  // Wrap content for zoom scaling
+  // Wrap main content for zoom scrolling
   try{
-    var app = document.getElementById('app');
     var wrap = document.createElement('div'); wrap.id='rwd_wrap';
     var sc = document.createElement('div'); sc.className='rwd-scroll';
-    while(app.firstChild){ sc.appendChild(app.firstChild); }
-    wrap.appendChild(sc); app.appendChild(wrap);
+    while(document.body.firstChild && !['cd_fab','rwd_fab_bar','rwd_zoom_card','cloudDiag'].includes(document.body.firstChild.id||'')){
+      sc.appendChild(document.body.firstChild);
+    }
+    wrap.appendChild(sc); document.body.insertBefore(wrap, document.body.firstChild);
   }catch(e){}
 
+  var box = document.getElementById('cloudDiag');
+  var fab = document.getElementById('cd_fab');
+  var btn = document.getElementById('cd_min_btn');
+  function setMin(on){
+    if(!box||!fab) return;
+    if(on){ box.classList.add('minimized'); fab.classList.remove('hidden'); try{localStorage.setItem('cd_min','1');}catch(e){} }
+    else { box.classList.remove('minimized'); fab.classList.add('hidden'); try{localStorage.setItem('cd_min','0');}catch(e){} }
+  }
+  try{ var last = localStorage.getItem('cd_min'); if(last===null) setMin(true); else setMin(last==='1'); }catch(e){ setMin(true) }
+  if(fab) fab.addEventListener('click', function(){ setMin(false) });
+  if(btn) btn.addEventListener('click', function(){ setMin(true) });
+  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape') setMin(true) });
+
+  // RWD controls
   var body = document.body;
   var fabM = document.getElementById('rwd_fab_mobile');
   var fabZ = document.getElementById('rwd_fab_zoom');
   var card = document.getElementById('rwd_zoom_card');
   var range = document.getElementById('rwd_zoom_range');
   var val = document.getElementById('rwd_zoom_val');
-
-  function setZoom(z){
-    z = Math.max(0.6, Math.min(1.6, z||1));
-    document.documentElement.style.setProperty('--rwd-zoom', z);
-    if(val) val.textContent = Math.round(z*100) + '%';
-    try{ localStorage.setItem('rwd_zoom', String(z)); }catch(e){}
-  }
-  function setMobile(on){
-    if(on){ body.classList.add('rwd-mobile'); }
-    else{ body.classList.remove('rwd-mobile'); }
-    try{ localStorage.setItem('rwd_mobile', on?'1':'0'); }catch(e){}
-  }
-  try{
-    var z = parseFloat(localStorage.getItem('rwd_zoom')||'1'); if(!isNaN(z)){ setZoom(z); if(range) range.value = z; }
-    var m = localStorage.getItem('rwd_mobile'); if(m!==null){ setMobile(m==='1'); }
-    else if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches){ setMobile(true); }
-  }catch(e){ setZoom(1); }
-
-  if(fabM){ fabM.addEventListener('click', function(){ setMobile(!body.classList.contains('rwd-mobile')); }); }
-  if(fabZ){ fabZ.addEventListener('click', function(){ if(!card) return; var show = card.style.display !== 'flex'; card.style.display = show ? 'flex' : 'none'; }); }
-  if(range){ range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); }); }
-  document.addEventListener('click', function(ev){ if(card && !card.contains(ev.target) && ev.target !== fabZ){ card.style.display='none'; } }, true);
+  function setZoom(z){ z=Math.max(0.6,Math.min(1.6, z||1)); document.documentElement.style.setProperty('--rwd-zoom', z); if(val) val.textContent=Math.round(z*100)+'%'; try{localStorage.setItem('rwd_zoom', String(z));}catch(e){} }
+  function setMobile(on){ if(on){ body.classList.add('rwd-mobile'); }else{ body.classList.remove('rwd-mobile'); } try{localStorage.setItem('rwd_mobile', on?'1':'0');}catch(e){} }
+  try{ var z=parseFloat(localStorage.getItem('rwd_zoom')||'1'); if(!isNaN(z)){ setZoom(z); if(range) range.value=z; } var m=localStorage.getItem('rwd_mobile'); if(m!==null){ setMobile(m==='1'); } else if (window.matchMedia && window.matchMedia('(max-width:768px)').matches){ setMobile(true);} }catch(e){}
+  if(fabM) fabM.addEventListener('click', function(){ setMobile(!body.classList.contains('rwd-mobile')); });
+  if(fabZ) fabZ.addEventListener('click', function(){ if(!card) return; var show = card.style.display!=='flex'; card.style.display = show?'flex':'none'; });
+  if(range) range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); });
+  document.addEventListener('click', function(ev){ if(card && !card.contains(ev.target) && ev.target!==fabZ){ card.style.display='none'; } }, true);
 })();
 </script>
 
-<div id="rowChip" aria-hidden="true"></div>
 
+<!-- FIXTAG: cloud-toolbar v2 -->
+<style>
+#cloudToolbar{position:fixed;right:14px;bottom:14px;z-index:2147483646;display:flex;gap:8px;align-items:center}
+#cloudToolbar button{padding:8px 12px;border-radius:10px;border:1px solid #93c5fd;background:#0a1222;color:#cfe1ff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#cloudToolbar .save{background:#0ea5e9;border-color:#0ea5e9;color:#fff}
+#cloudToolbar .load{background:#10b981;border-color:#10b981;color:#fff}
+@media print{#cloudToolbar{display:none}}
+</style>
+<div id="cloudToolbar" aria-label="Cloud actions">
+  <button class="save" title="將目前名單/狀態寫入 Firestore">雲端儲存</button>
+  <button class="load" title="從 Firestore 載入雲端資料">雲端讀取</button>
+</div>
 <script>
 (function(){
-  var stickyOn = false;
-  var btn = document.getElementById('toggleSticky');
-  var chip = document.getElementById('rowChip');
-  var grid = document.getElementById('grid');
-  var tbody = document.getElementById('tbody');
-
-  function measureFrozen(){
+  function show(msg, level){ try{ (window.showToast||alert)(msg); }catch(_){
+    console && console.log('[Toast]', msg);
+  } }
+  function call(fnName){
     try{
-      var th1 = grid.querySelector('thead th:nth-child(1)');
-      var th2 = grid.querySelector('thead th:nth-child(2)');
-      var th3 = grid.querySelector('thead th:nth-child(3)');
-      var w1 = (th1 && th1.getBoundingClientRect().width) || 60;
-      var w2 = (th2 && th2.getBoundingClientRect().width) || 150;
-      var w3 = (th3 && th3.getBoundingClientRect().width) || 250;
-      document.documentElement.style.setProperty('--sticky1', w1 + 'px');
-      document.documentElement.style.setProperty('--sticky2', w2 + 'px');
-      document.documentElement.style.setProperty('--sticky3', w3 + 'px');
-      document.documentElement.style.setProperty('--frozenW', (w1 + w2 + w3) + 'px');
-    }catch(e){}
+      var fn = (window.__fireSnap && __fireSnap[fnName]) || window[fnName];
+      if (typeof fn !== 'function') { show('找不到 '+fnName+' 函式','err'); return; }
+      var p = fn();
+      if (p && p.catch) p.catch(function(err){ show('Firestore 錯誤: '+ (err && (err.message||err.code)||err), 'err'); });
+    }catch(err){ show('Firestore 執行失敗: '+err, 'err'); }
   }
-
-  function setSticky(on){
-    stickyOn = !!on;
-    document.body.classList.toggle('sticky-names', stickyOn);
-    if (btn) btn.textContent = '鎖定姓名欄：' + (stickyOn ? '開' : '關');
-    measureFrozen();
+  var bar = document.getElementById('cloudToolbar');
+  if (bar){
+    bar.querySelector('.save').addEventListener('click', function(){ call('saveToFirestore'); });
+    bar.querySelector('.load').addEventListener('click', function(){ call('loadFromFirestore'); });
   }
-
-  if (btn){
-    btn.addEventListener('click', function(){ setSticky(!stickyOn); });
-  }
-
-  // Auto enable sticky on small screens if user prefers (store preference)
-  try{
-    var pref = localStorage.getItem('pref_sticky_names');
-    if (pref !== null){ setSticky(pref === '1'); }
-    else { setSticky(false); } // default off per your last request
-    // Save preference on change
-    btn && btn.addEventListener('click', function(){
-      try{ localStorage.setItem('pref_sticky_names', stickyOn ? '1' : '0'); }catch(e){}
-    });
-  }catch(e){ setSticky(false); }
-
-  // Re-measure on resize or after table rebuilds (expose a hook)
-  window.addEventListener('resize', measureFrozen);
-  var _buildTable = window.buildTable;
-  window.buildTable = function(){ if (typeof _buildTable === 'function') _buildTable(); setTimeout(measureFrozen, 0); };
-
-  // Touch-following row chip when sticky is OFF
-  function rowFromEvent(ev){
-    var t = ev.touches && ev.touches[0];
-    if (!t) return null;
-    var el = document.elementFromPoint(t.clientX, t.clientY);
-    if (!el) return null;
-    var tr = el.closest && el.closest('#tbody tr');
-    return tr;
-  }
-  function nameForRow(tr){
-    if(!tr) return '';
-    var tds = tr.querySelectorAll('td');
-    var name = (tds[1] && tds[1].textContent) || '';
-    var prof = (tds[2] && tds[2].textContent) || '';
-    return (name + (prof ? '｜' + prof : '')).trim();
-  }
-
-  function showChip(text){
-    if (!chip) return;
-    chip.textContent = text || '';
-    chip.style.display = text ? 'inline-block' : 'none';
-  }
-
-  var wrap = document.querySelector('.table-wrap');
-  if (wrap){
-    var active = false;
-    wrap.addEventListener('touchstart', function(ev){
-      if (stickyOn) return; // no chip if sticky is on
-      active = true;
-      var tr = rowFromEvent(ev);
-      showChip(nameForRow(tr));
-    }, {passive: true});
-    wrap.addEventListener('touchmove', function(ev){
-      if (!active || stickyOn) return;
-      var tr = rowFromEvent(ev);
-      showChip(nameForRow(tr));
-    }, {passive: true});
-    ['touchend','touchcancel'].forEach(function(tp){
-      wrap.addEventListener(tp, function(){ active = false; showChip(''); }, {passive: true});
-    });
-  }
-
-  // Initial measure
-  setTimeout(measureFrozen, 0);
 })();
 </script>
 
