@@ -77,7 +77,27 @@
     #pwdBox input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:#0c111c;color:#e5e7eb}
     #pwdBox .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
     #pwdBox button{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#1a2133;color:#cfe1ff}
-  </style>
+  
+/* --- Mobile-friendly sticky tweaks (avoid name overlay) --- */
+#grid th:nth-child(3), #grid td:nth-child(3){ box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset; }
+@media (max-width: 820px){
+  /* On small screens, unstick name & profession to prevent overlay on data cells */
+  #grid th:nth-child(2), #grid td:nth-child(2),
+  #grid th:nth-child(3), #grid td:nth-child(3){
+    position: static !important;
+    left: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+  /* Keep only the first index column sticky (small) */
+  #grid th:first-child, #grid td:first-child{
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 2 !important;
+  }
+}
+
+</style>
 </head>
 <body>
 <div class="wrap" id="app">
