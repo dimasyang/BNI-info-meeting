@@ -97,6 +97,33 @@
   }
 }
 
+
+/* Sticky-names mode (mobile-friendly) */
+body.sticky-names #grid th:nth-child(2), 
+body.sticky-names #grid td:nth-child(2),
+body.sticky-names #grid th:nth-child(3), 
+body.sticky-names #grid td:nth-child(3){
+  position: sticky !important;
+  left: auto !important;
+  z-index: 2 !important;
+}
+/* Position the second & third columns next to the first sticky col */
+body.sticky-names #grid th:nth-child(2), body.sticky-names #grid td:nth-child(2){ left: var(--sticky1, 60px) !important; }
+body.sticky-names #grid th:nth-child(3), body.sticky-names #grid td:nth-child(3){ left: calc(var(--sticky1, 60px) + var(--sticky2, 150px)) !important; }
+/* Add left padding to scrollable area so data doesn't hide under sticky columns */
+body.sticky-names .table-wrap{ padding-left: var(--frozenW, 420px); }
+/* Floating row name chip (shown when sticky is OFF and user touches table) */
+#rowChip{
+  position: fixed; left: 10px; bottom: 70px; z-index: 2147483001;
+  background: #0a1222; color: #cfe1ff; border:1px solid #314d7a; border-radius: 999px;
+  padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  display:none; pointer-events:none; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (min-width: 821px){
+  /* Only use the chip behavior on small screens */
+  #rowChip{ display:none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -110,6 +137,7 @@
     <button id="unlockBtn">解鎖（密碼）</button>
     <button id="cloudSave">雲端儲存</button>
     <button id="cloudLoad">雲端讀取</button>
+    <button id="toggleSticky" class="badge" title="行動裝置建議開啟">鎖定姓名欄：關</button>
     <button id="importBtn">匯入成員</button>
     <button id="csvBtn">匯出CSV</button>
     <button id="printBtn">列印</button>
@@ -593,6 +621,105 @@ init();
   if(fabZ){ fabZ.addEventListener('click', function(){ if(!card) return; var show = card.style.display !== 'flex'; card.style.display = show ? 'flex' : 'none'; }); }
   if(range){ range.addEventListener('input', function(){ setZoom(parseFloat(range.value||'1')); }); }
   document.addEventListener('click', function(ev){ if(card && !card.contains(ev.target) && ev.target !== fabZ){ card.style.display='none'; } }, true);
+})();
+</script>
+
+<div id="rowChip" aria-hidden="true"></div>
+
+<script>
+(function(){
+  var stickyOn = false;
+  var btn = document.getElementById('toggleSticky');
+  var chip = document.getElementById('rowChip');
+  var grid = document.getElementById('grid');
+  var tbody = document.getElementById('tbody');
+
+  function measureFrozen(){
+    try{
+      var th1 = grid.querySelector('thead th:nth-child(1)');
+      var th2 = grid.querySelector('thead th:nth-child(2)');
+      var th3 = grid.querySelector('thead th:nth-child(3)');
+      var w1 = (th1 && th1.getBoundingClientRect().width) || 60;
+      var w2 = (th2 && th2.getBoundingClientRect().width) || 150;
+      var w3 = (th3 && th3.getBoundingClientRect().width) || 250;
+      document.documentElement.style.setProperty('--sticky1', w1 + 'px');
+      document.documentElement.style.setProperty('--sticky2', w2 + 'px');
+      document.documentElement.style.setProperty('--sticky3', w3 + 'px');
+      document.documentElement.style.setProperty('--frozenW', (w1 + w2 + w3) + 'px');
+    }catch(e){}
+  }
+
+  function setSticky(on){
+    stickyOn = !!on;
+    document.body.classList.toggle('sticky-names', stickyOn);
+    if (btn) btn.textContent = '鎖定姓名欄：' + (stickyOn ? '開' : '關');
+    measureFrozen();
+  }
+
+  if (btn){
+    btn.addEventListener('click', function(){ setSticky(!stickyOn); });
+  }
+
+  // Auto enable sticky on small screens if user prefers (store preference)
+  try{
+    var pref = localStorage.getItem('pref_sticky_names');
+    if (pref !== null){ setSticky(pref === '1'); }
+    else { setSticky(false); } // default off per your last request
+    // Save preference on change
+    btn && btn.addEventListener('click', function(){
+      try{ localStorage.setItem('pref_sticky_names', stickyOn ? '1' : '0'); }catch(e){}
+    });
+  }catch(e){ setSticky(false); }
+
+  // Re-measure on resize or after table rebuilds (expose a hook)
+  window.addEventListener('resize', measureFrozen);
+  var _buildTable = window.buildTable;
+  window.buildTable = function(){ if (typeof _buildTable === 'function') _buildTable(); setTimeout(measureFrozen, 0); };
+
+  // Touch-following row chip when sticky is OFF
+  function rowFromEvent(ev){
+    var t = ev.touches && ev.touches[0];
+    if (!t) return null;
+    var el = document.elementFromPoint(t.clientX, t.clientY);
+    if (!el) return null;
+    var tr = el.closest && el.closest('#tbody tr');
+    return tr;
+  }
+  function nameForRow(tr){
+    if(!tr) return '';
+    var tds = tr.querySelectorAll('td');
+    var name = (tds[1] && tds[1].textContent) || '';
+    var prof = (tds[2] && tds[2].textContent) || '';
+    return (name + (prof ? '｜' + prof : '')).trim();
+  }
+
+  function showChip(text){
+    if (!chip) return;
+    chip.textContent = text || '';
+    chip.style.display = text ? 'inline-block' : 'none';
+  }
+
+  var wrap = document.querySelector('.table-wrap');
+  if (wrap){
+    var active = false;
+    wrap.addEventListener('touchstart', function(ev){
+      if (stickyOn) return; // no chip if sticky is on
+      active = true;
+      var tr = rowFromEvent(ev);
+      showChip(nameForRow(tr));
+    }, {passive: true});
+    wrap.addEventListener('touchmove', function(ev){
+      if (!active || stickyOn) return;
+      var tr = rowFromEvent(ev);
+      showChip(nameForRow(tr));
+    }, {passive: true});
+    ['touchend','touchcancel'].forEach(function(tp){
+      wrap.addEventListener(tp, function(){ active = false; showChip(''); }, {passive: true});
+    });
+  }
+
+  // Initial measure
+  setTimeout(measureFrozen, 0);
 })();
 </script>
 
