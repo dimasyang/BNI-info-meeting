@@ -167,6 +167,11 @@ body.sticky-names #grid td:nth-child(3){
 #joinDialog select { background:#0c111c; border:1px solid #334155; color:#e8eaed; border-radius:8px; padding:6px; }
 #joinDialog option { color:#e8eaed; background:#0c111c; }
 
+
+/* 強化：未解鎖時也保持亮度 */
+.status[disabled]{ opacity:1 !important; }
+/* 也讓 o2o-pill 在唯讀時清楚 */
+.o2o-pill[disabled]{ opacity:1 !important; }
 </style>
 </head>
 <body>
@@ -182,6 +187,7 @@ body.sticky-names #grid td:nth-child(3){
     <button id="cloudLoad">雲端讀取</button>
     <button id="toggleSticky" class="badge" title="行動裝置建議開啟">鎖定姓名欄：關</button>
     <button id="importBtn">匯入成員</button>
+    <button id="addBtn">新增成員</button>
     <button id="joinBtn">加入日設定</button>
     <button id="csvBtn">匯出CSV</button>
     <button id="printBtn">列印</button>
@@ -248,6 +254,26 @@ body.sticky-names #grid td:nth-child(3){
   </form>
 </dialog>
 
+
+<!-- 新增成員對話框 -->
+<dialog id="addMemberDialog">
+  <form method="dialog" style="min-width:min(560px,90vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
+    <h3 style="margin:0 0 8px;">新增成員</h3>
+    <div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;">
+      <label>編號（自動）</label>
+      <input id="addId" type="number" readonly style="background:#0c111c;color:#e8eaed;border:1px solid var(--border);border-radius:8px;padding:8px;">
+      <label>姓名</label>
+      <input id="addName" type="text" placeholder="必填" style="background:#0c111c;color:#e8eaed;border:1px solid var(--border);border-radius:8px;padding:8px;">
+      <label>專業別</label>
+      <input id="addProf" type="text" placeholder="必填" style="background:#0c111c;color:#e8eaed;border:1px solid var(--border);border-radius:8px;padding:8px;">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+      <button value="cancel">取消</button>
+      <button id="addOK" value="default">加入</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- 配對對話框 -->
 <dialog id="pairDialog">
   <form method="dialog" style="min-width:min(560px,92vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
@@ -266,6 +292,20 @@ const DATES = ["10/01","10/08","10/15","10/22","10/29","11/05"];
 const DATE_KEYS = ["2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29","2025-11-05"];
 const MEMBERS_KEY = "core-team-members-2025-10";
 
+
+
+function ensureMember14(){
+  try{
+    if(!Array.isArray(MEMBERS)) MEMBERS = [];
+    var exists = MEMBERS.some(function(m){ return (Number(m.id)===14) || (m && m.name==="江明駿"); });
+    if(!exists){
+      MEMBERS.push({ id:14, name:"江明駿", profession:"高空樹木工程", joinDate: (DATE_KEYS && DATE_KEYS[0]) });
+      MEMBERS.sort(function(a,b){ return (Number(a.id)||0) - (Number(b.id)||0); });
+      try{ localStorage.setItem(MEMBERS_KEY, JSON.stringify(MEMBERS)); }catch(e){}
+    }
+  }catch(e){}
+}
+
 let MEMBERS = [
   { id:1,  name:"徐國華", profession:"中藥包裝設備買賣業" },
   { id:2,  name:"吳冠璋", profession:"理財規劃保險業" },
@@ -279,7 +319,8 @@ let MEMBERS = [
   { id:10, name:"李朵嫻", profession:"咖啡烘豆業" },
   { id:11, name:"鍾昆翰", profession:"汽車鍍膜業" },
   { id:12, name:"徐孝衡", profession:"油品品牌商" },
-  { id:13, name:"吳典蓉", profession:"民事訴訟律師" },
+  { id:13, name:"吳典蓉", profession:"民事訴訟律師" },  { id:14, name:"江明駿", profession:"高空樹木工程" }
+
 ];
 
 const tbody = document.getElementById('tbody');
@@ -603,6 +644,7 @@ init();
     if(!snap.exists){ alert("⚠️ 雲端尚無資料"); return; }
     const data = snap.data() || {};
     if (Array.isArray(data.members) && data.members.length){ MEMBERS = data.members; }
+    ensureMember14();
     buildTable();
     if (Array.isArray(data.rows)){ applyRows(data.rows); }
     alert("✅ 已從雲端讀回");
@@ -839,19 +881,36 @@ init();
   // snapshot 與 applyRows 維持原狀；統計與矩陣需以加入日為門檻
   var _fillRightSummary = window.fillRightSummary;
   window.fillRightSummary = function(tr,ri){
-    var cells=tr.querySelectorAll('td'); var present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
-    var j = new Date(MEMBERS[ri].joinDate || DATE_KEYS[0]);
-    DATE_KEYS.forEach(function(k,di){
-      var d = new Date(k);
-      if (d < j) return; // 未加入前不計
-      var cell=cells[3+di]; var v=cell.querySelector('.status').textContent;
-      if(v==='🟢'||v==='🟡'){ present++; }
-      var g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
-      var partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
-    });
-    var total= DATE_KEYS.filter(k=> (new Date(k) >= j)).length;
-    var attRate= total? Math.round((present/total)*1000)/10 : 0; var guestRate= present? Math.round((guestDays/present)*1000)/10 : 0; var o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0; var perf=Math.round((0.5*attRate + 0.25*guestRate + 0.25*o2oRate)*10)/10; var base=3+DATE_KEYS.length; var vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%']; for(let i=0;i<6;i++){ var td=tr.querySelectorAll('td')[base+i]; td.textContent=vals[i]; td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i]; }
-  };
+  var cells=tr.querySelectorAll('td'); var present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
+  var j = new Date(MEMBERS[ri].joinDate || DATE_KEYS[0]);
+  DATE_KEYS.forEach(function(k,di){
+    var d = new Date(k);
+    if (d < j) return; // 未加入前不計
+    var cell=cells[3+di]; var v=cell.querySelector('.status').textContent;
+    if(v==='🟢'||v==='🟡'){ present++; }
+    var g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
+    var partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
+  });
+  // 基期（tenure）調整：只計算加入日之後且不晚於今天的應參與場次
+  var totalAll = DATE_KEYS.filter(function(k){ return (new Date(k) >= j); }).length;
+  var today = new Date();
+  var tenureEligible = DATE_KEYS.filter(function(k){ var d=new Date(k); return (d >= j) && (d <= today); }).length;
+  if (tenureEligible < 1) tenureEligible = 1; // 避免除以零
+  var attRate= totalAll? Math.round((present/totalAll)*1000)/10 : 0;
+  var guestRate= present? Math.round((guestDays/present)*1000)/10 : 0;
+  var o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0;
+  var baseScore = (0.5*attRate + 0.25*guestRate + 0.25*o2oRate);
+  // 新人抑制（公平基期）：前 4 場內按比例遞增權重，滿 4 場即達 100%
+  var tenureFactor = Math.min(1, tenureEligible / 4);
+  var perf = Math.round(baseScore * tenureFactor * 10)/10;
+  var base=3+DATE_KEYS.length;
+  var vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%'];
+  for(let i=0;i<6;i++){
+    var td=tr.querySelectorAll('td')[base+i];
+    td.textContent=vals[i];
+    td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i];
+  }
+};
 
   var _updateTotals = window.updateTotals;
   window.updateTotals = function(){
@@ -987,12 +1046,243 @@ init();
       if(!snap.exists){ alert('⚠️ 雲端尚無資料'); return; }
       const d = snap.data() || {};
       if (Array.isArray(d.members) && d.members.length){ MEMBERS = d.members; }
+      ensureMember14();
       buildTable();
       if (Array.isArray(d.rows)){ applyRows(d.rows); }
       updateTotals();
       alert('✅ 已從雲端讀回（含加入日）');
     }catch(e){ alert('❌ 雲端讀取失敗：'+(e && (e.message||e))); }
   };
+})();
+</script>
+
+
+<script>
+// === 單筆新增成員（強化：自動編號、白色輸入字體） ===
+(function(){
+  function nextMemberIdSafe(){
+    try{
+      if (Array.isArray(window.MEMBERS) && window.MEMBERS.length){
+        return window.MEMBERS.reduce((m,x)=>Math.max(m, Number(x.id)||0), 0) + 1;
+      }
+    }catch(e){}
+    try{
+      var rows = document.querySelectorAll('#tbody tr');
+      if(rows && rows.length){
+        var last = rows[rows.length-1];
+        var idCell = last && last.querySelector('td');
+        var id = idCell ? parseInt(idCell.textContent.trim(),10) : 0;
+        if(!isNaN(id) && id>=0) return id + 1;
+      }
+    }catch(e){}
+    return 1;
+  }
+  function wire(){
+    try{
+      var btn = document.getElementById('addBtn');
+      var dlg = document.getElementById('addMemberDialog');
+      var fId = document.getElementById('addId');
+      var fName = document.getElementById('addName');
+      var fProf = document.getElementById('addProf');
+      var ok = document.getElementById('addOK');
+      if(!btn || !dlg || !fId || !fName || !fProf || !ok) return;
+      btn.addEventListener('click', function(){
+        if(window.READ_ONLY){ alert('🔒 目前為讀取模式，請先解鎖'); return; }
+        fId.value = String(nextMemberIdSafe());
+        fName.value = '';
+        fProf.value = '';
+        dlg.showModal();
+      });
+      
+      ok.addEventListener('click', function(){
+        if(window.READ_ONLY) return;
+        var id = Number(fId.value) || nextMemberIdSafe();
+        var name = (fName.value||'').trim();
+        var profession = (fProf.value||'').trim();
+        if(!name || !profession){ alert('請輸入「姓名」與「專業別」'); return; }
+        if(!Array.isArray(window.MEMBERS)) window.MEMBERS = [];
+        window.MEMBERS.push({ id:id, name:name, profession:profession, joinDate: (window.DATE_KEYS && window.DATE_KEYS[0]) });
+        // 依編號排序，避免亂序
+        window.MEMBERS.sort(function(a,b){ return (Number(a.id)||0) - (Number(b.id)||0); });
+        try{ localStorage.setItem(window.MEMBERS_KEY, JSON.stringify(window.MEMBERS)); }catch(e){}
+        // 清除搜尋以免被隱藏
+        try{
+          var q = document.getElementById('q');
+          if(q){ q.value = ''; }
+        }catch(e){}
+        if(typeof window.buildTable==='function') window.buildTable();
+        if(typeof window.updateTotals==='function') window.updateTotals();
+        // 捲到最底並閃爍新列
+        try{
+          var rows = document.querySelectorAll('#tbody tr');
+          if(rows && rows.length){
+            var last = rows[rows.length-1];
+            last.scrollIntoView({behavior:'smooth', block:'center'});
+            last.style.transition = 'background 0.6s';
+            last.style.background = '#1e293b';
+            setTimeout(function(){ last.style.background = ''; }, 800);
+          }
+        }catch(e){}
+      });
+
+      var _setReadOnly = window.setReadOnly;
+      if(typeof _setReadOnly === 'function'){
+        window.setReadOnly = function(ro){
+          _setReadOnly(ro);
+          try{ document.getElementById('addBtn').disabled = !!ro; }catch(e){}
+          try{
+            var dlgEl = document.getElementById('addMemberDialog');
+            if(dlgEl){ dlgEl.querySelectorAll('input').forEach(function(inp){ inp.style.color = '#e8eaed'; }); }
+          }catch(e){}
+        };
+        try{ document.getElementById('addBtn').disabled = !!window.READ_ONLY; }catch(e){}
+      }
+    }catch(e){ console.error('新增成員 wire 失敗:', e); }
+  }
+  try{
+    var style = document.createElement('style');
+    style.textContent = '#addMemberDialog input{color:#e8eaed !important;} #addMemberDialog input::placeholder{color:#e8eaed !important; opacity:0.7;}';
+    document.head.appendChild(style);
+  }catch(e){}
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', wire); } else { wire(); }
+})();
+</script>
+
+
+<script>
+// === 加入：加入日選單 + 強制補 #14 江明駿 ===
+(function(){
+  function afterReady(fn){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+    else fn();
+  }
+  function waitUntil(cond, cb, tries=120){
+    const t = setInterval(function(){
+      if (cond()){
+        clearInterval(t); cb();
+      } else if(--tries<=0){ clearInterval(t); }
+    }, 50);
+  }
+
+  // 1) 動態在新增成員對話框加入「加入日」選單
+  function mountJoinDateSelect(){
+    try{
+      var dlg = document.getElementById('addMemberDialog');
+      if(!dlg || document.getElementById('addJoin')) return;
+      var grid = dlg.querySelector('div[style*="grid-template-columns"]');
+      if(!grid) return;
+      var lab = document.createElement('label'); lab.textContent = '加入日';
+      var sel = document.createElement('select'); sel.id='addJoin';
+      sel.style.cssText='background:#0c111c;color:#e8eaed;border:1px solid var(--border);border-radius:8px;padding:8px;';
+      var keys = (window.DATE_KEYS && Array.isArray(window.DATE_KEYS)) ? window.DATE_KEYS.slice() : [];
+      if(!keys.length){
+        keys = ['']; // fallback
+      }
+      keys.forEach(function(k,i){
+        var opt = document.createElement('option');
+        opt.value = k || '';
+        opt.textContent = k ? k : '（本期第一天）';
+        sel.appendChild(opt);
+      });
+      grid.appendChild(lab);
+      grid.appendChild(sel);
+    }catch(e){ console.error('mountJoinDateSelect', e); }
+  }
+
+  // 2) 改寫新增成員 OK 行為：帶入加入日、重建矩陣
+  function enhanceAddHandler(){
+    try{
+      var ok = document.getElementById('addOK');
+      if(!ok) return;
+      var attached = ok.getAttribute('data-enhanced');
+      if(attached==='1') return;
+      ok.setAttribute('data-enhanced','1');
+
+      var fId = document.getElementById('addId');
+      var fName = document.getElementById('addName');
+      var fProf = document.getElementById('addProf');
+
+      ok.addEventListener('click', function(){
+        if(window.READ_ONLY) return;
+        var id = Number(fId.value) || 1;
+        // 自動編號（再保險）
+        try{
+          if (Array.isArray(window.MEMBERS) && window.MEMBERS.length){
+            id = Math.max.apply(null, window.MEMBERS.map(function(m){ return Number(m.id)||0; })) + 1;
+          }else{
+            var rows = document.querySelectorAll('#tbody tr');
+            if(rows && rows.length){
+              var last = rows[rows.length-1];
+              var idCell = last && last.querySelector('td');
+              var idTmp = idCell ? parseInt(idCell.textContent.trim(),10) : 0;
+              if(!isNaN(idTmp)) id = idTmp + 1;
+            }
+          }
+        }catch(e){}
+
+        var name = (fName && fName.value || '').trim();
+        var profession = (fProf && fProf.value || '').trim();
+        var joinSel = document.getElementById('addJoin');
+        var joinDate = (joinSel && joinSel.value) || (window.DATE_KEYS && window.DATE_KEYS[0]) || '';
+
+        if(!name || !profession){
+          alert('請輸入「姓名」與「專業別」');
+          return;
+        }
+        if(!Array.isArray(window.MEMBERS)) window.MEMBERS = [];
+        if(window.MEMBERS.some(function(m){ return String(m.name)===name; })){
+          alert('此姓名已存在，請確認！');
+          return;
+        }
+        window.MEMBERS.push({ id:id, name:name, profession:profession, joinDate:joinDate });
+        window.MEMBERS.sort(function(a,b){ return (Number(a.id)||0)-(Number(b.id)||0); });
+        try{ localStorage.setItem(window.MEMBERS_KEY, JSON.stringify(window.MEMBERS)); }catch(e){}
+
+        try{ var q=document.getElementById('q'); if(q){ q.value=''; q.dispatchEvent(new Event('input')); } }catch(e){}
+        if (typeof buildTable==='function') buildTable();
+        if (typeof buildMatrix==='function') buildMatrix();
+        if (typeof updateTotals==='function') updateTotals();
+        setTimeout(function(){
+          if (typeof updateTotals==='function') updateTotals();
+          try{
+            var rows = document.querySelectorAll('#tbody tr');
+            if(rows && rows.length){
+              var last = rows[rows.length-1];
+              last.scrollIntoView({behavior:'smooth', block:'center'});
+              last.style.transition='background 0.6s'; last.style.background='#1e293b';
+              setTimeout(function(){ last.style.background=''; }, 800);
+            }
+          }catch(e){}
+        },60);
+      });
+    }catch(e){ console.error('enhanceAddHandler', e); }
+  }
+
+  // 3) 一次性強制補入 #14 江明駿（你交代的那位）
+  function forceInsertMember(){
+    try{
+      if(!Array.isArray(window.MEMBERS)) window.MEMBERS = [];
+      var exists = window.MEMBERS.some(function(m){ return Number(m.id)===14 || String(m.name)==='江明駿'; });
+      if(!exists){
+        var joinDate = (window.DATE_KEYS && window.DATE_KEYS[0]) || '';
+        window.MEMBERS.push({ id:14, name:'江明駿', profession:'高空樹木工程', joinDate:joinDate });
+        window.MEMBERS.sort(function(a,b){ return (Number(a.id)||0)-(Number(b.id)||0); });
+        try{ localStorage.setItem(window.MEMBERS_KEY, JSON.stringify(window.MEMBERS)); }catch(e){}
+      }
+      if (typeof buildTable==='function') buildTable();
+      if (typeof buildMatrix==='function') buildMatrix();
+      if (typeof updateTotals==='function') updateTotals();
+    }catch(e){ console.error('forceInsertMember', e); }
+  }
+
+  afterReady(function(){
+    // 等待原本程式初始化完成（buildTable 等函式存在後）
+    waitUntil(function(){ return typeof buildTable==='function' && typeof buildMatrix==='function'; }, function(){
+      try{ mountJoinDateSelect(); }catch(e){}
+      try{ enhanceAddHandler(); }catch(e){}
+      try{ forceInsertMember(); }catch(e){}
+    });
+  });
 })();
 </script>
 
