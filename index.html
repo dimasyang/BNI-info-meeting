@@ -290,6 +290,19 @@ function ensureMember15(){
     }
   }catch(e){}
 }
+// ✅ 新增：確保 #16 吳松齡（食材批發配送業）
+function ensureMember16(){
+  try{
+    if(!Array.isArray(MEMBERS)) MEMBERS = [];
+    var exists = MEMBERS.some(function(m){ return (Number(m.id)===16) || (m && m.name==="吳松齡"); });
+    if(!exists){
+      MEMBERS.push({ id:16, name:"吳松齡", profession:"食材批發配送業", joinDate:"2025-11-26" });
+      MEMBERS.sort(function(a,b){ return (Number(a.id)||0) - (Number(b.id)||0); });
+      try{ localStorage.setItem(MEMBERS_KEY, JSON.stringify(MEMBERS)); }catch(e){}
+    }
+  }catch(e){}
+}
+
 
 let MEMBERS = [
   { id:1,  name:"徐國華", profession:"中藥包裝設備買賣業" },
@@ -306,7 +319,8 @@ let MEMBERS = [
   { id:12, name:"徐孝衡", profession:"油品品牌商" },
   { id:13, name:"吳典蓉", profession:"民事訴訟律師" },
   { id:14, name:"江明駿", profession:"高空樹木工程" },
-  { id:15, name:"顏子茵", profession:"助眠產品品牌商", joinDate:"2025-11-12" }
+  { id:15, name:"顏子茵", profession:"助眠產品品牌商", joinDate:"2025-11-12" },
+  { id:16, name:"吳松齡", profession:"食材批發配送業", joinDate:"2025-11-26" }
 ];
 
 const tbody = document.getElementById('tbody');
@@ -547,6 +561,7 @@ function init(){
   try{ const m = JSON.parse(localStorage.getItem(MEMBERS_KEY)||'null'); if(Array.isArray(m) && m.length){ MEMBERS = m; } }catch(e){}
   ensureMember14();
   ensureMember15();
+  ensureMember16();
   buildTable();
   document.getElementById('csvBtn').addEventListener('click', exportCSV);
   document.getElementById('printBtn').addEventListener('click', printPage);
@@ -628,6 +643,7 @@ init();
     if (Array.isArray(data.members) && data.members.length){ MEMBERS = data.members; }
     ensureMember14();
     ensureMember15();
+    ensureMember16();
     buildHeader();
     buildTable();
     if (Array.isArray(data.rows)){ applyRows(data.rows); }
@@ -811,6 +827,7 @@ init();
     var m13 = MEMBERS.find(m=>m.id===13);
     if(m13 && !m13._patchedOnce){ m13.joinDate = "2025-10-08"; m13._patchedOnce = true; }
     ensureMember15(); // 確保 15 也有 joinDate
+    ensureMember16(); // 確保 16 也有 joinDate
   }
   ensureJoinDates();
 
@@ -1014,6 +1031,7 @@ init();
       if (Array.isArray(d.members) && d.members.length){ MEMBERS = d.members; }
       ensureMember14();
       ensureMember15();
+      ensureMember16();
       buildHeader();
       buildTable();
       if (Array.isArray(d.rows)){ applyRows(d.rows); }
