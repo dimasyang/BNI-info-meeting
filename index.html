@@ -45,7 +45,6 @@
     .totals{font-size:12px;display:flex;gap:8px;justify-content:center;color:#cbd5e1}
     .footer{color:var(--muted);padding:12px 16px}
     input[type="search"]{background:#0c111c;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:10px;min-width:220px;margin-left:auto}
-    /* Matrix */
     .matrix-card h2{font-size:16px;margin:14px}
     #matrixWrap{overflow:auto;border-top:1px solid var(--border)}
     #matrix{border-collapse:separate;border-spacing:0;width:100%}
@@ -74,70 +73,65 @@
     #pwdBox input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:#0c111c;color:#e5e7eb}
     #pwdBox .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
     #pwdBox button{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#1a2133;color:#cfe1ff}
-/* --- Mobile-friendly sticky tweaks --- */
-#grid th:nth-child(3), #grid td:nth-child(3){ box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset; }
-@media (max-width: 820px){
-  #grid th:nth-child(2), #grid td:nth-child(2),
-  #grid th:nth-child(3), #grid td:nth-child(3){
-    position: static !important;
-    left: auto !important;
-    z-index: auto !important;
-    box-shadow: none !important;
-  }
-  #grid th:first-child, #grid td:first-child{
-    position: sticky !important;
-    left: 0 !important;
-    z-index: 2 !important;
-  }
-}
-body.sticky-names #grid th:nth-child(2), 
-body.sticky-names #grid td:nth-child(2),
-body.sticky-names #grid th:nth-child(3), 
-body.sticky-names #grid td:nth-child(3){
-  position: sticky !important;
-  left: auto !important;
-  z-index: 2 !important;
-}
-body.sticky-names #grid th:nth-child(2), body.sticky-names #grid td:nth-child(2){ left: var(--sticky1, 60px) !important; }
-body.sticky-names #grid th:nth-child(3), body.sticky-names #grid td:nth-child(3){ left: calc(var(--sticky1, 60px) + var(--sticky2, 150px)) !important; }
-#rowChip{
-  position: fixed; left: 10px; bottom: 70px; z-index: 2147483001;
-  background: #0a1222; color: #cfe1ff; border:1px solid #314d7a; border-radius: 999px;
-  padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
-  display:none; pointer-events:none; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-@media (min-width: 821px){
-  #rowChip{ display:none !important; }
-}
-#pairDialog { color: #e8eaed; }
-#pairDialog label { color: #e8eaed; }
-#pairDialog input[type="checkbox"] { accent-color: #60a5fa; }
-#pairDialog #pairList { background:#0c111c; }
-body.sticky-names #grid th:nth-child(2), 
-body.sticky-names #grid td:nth-child(2),
-body.sticky-names #grid th:nth-child(3), 
-body.sticky-names #grid td:nth-child(3){
-  background: #161a26 !important;
-  z-index: 5 !important;
-}
-body.sticky-names #grid th:nth-child(3), 
-body.sticky-names #grid td:nth-child(3){
-  box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset;
-}
-.prejoin { opacity:.45; filter:saturate(0.2); pointer-events:none }
-.prejoin .status, .prejoin .guest-step, .prejoin .guest-zero, .prejoin .guest-input, .prejoin .pair-btn { pointer-events:none }
-.name-badge { font-size:10px; color:#facc15; border:1px solid #4b5563; padding:1px 6px; border-radius:999px; margin-left:6px; background:#111827 }
-#pairDialog { color:#e8eaed; }
-#pairDialog label { color:#e8eaed !important; }
-#pairDialog #pairList { background:#0c111c; }
-#pairDialog input[type="checkbox"]{ accent-color:#60a5fa; }
-#joinDialog { color:#e8eaed; }
-#joinDialog * { color:#e8eaed; }
-#joinDialog #joinList { background:#0c111c; }
-#joinDialog select { background:#0c111c; border:1px solid #334155; color:#e8eaed; border-radius:8px; padding:6px; }
-#joinDialog option { color:#e8eaed; background:#0c111c; }
-.status[disabled]{ opacity:1 !important; }
-.o2o-pill[disabled]{ opacity:1 !important; }
+    #grid th:nth-child(3), #grid td:nth-child(3){ box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset; }
+    @media (max-width: 820px){
+      #grid th:nth-child(2), #grid td:nth-child(2),
+      #grid th:nth-child(3), #grid td:nth-child(3){
+        position: static !important;
+        left: auto !important;
+        z-index: auto !important;
+        box-shadow: none !important;
+      }
+      #grid th:first-child, #grid td:first-child{
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 2 !important;
+      }
+    }
+    body.sticky-names #grid th:nth-child(2), 
+    body.sticky-names #grid td:nth-child(2),
+    body.sticky-names #grid th:nth-child(3), 
+    body.sticky-names #grid td:nth-child(3){
+      position: sticky !important;
+      left: auto !important;
+      z-index: 2 !important;
+    }
+    body.sticky-names #grid th:nth-child(2), body.sticky-names #grid td:nth-child(2){ left: var(--sticky1, 60px) !important; }
+    body.sticky-names #grid th:nth-child(3), body.sticky-names #grid td:nth-child(3){ left: calc(var(--sticky1, 60px) + var(--sticky2, 150px)) !important; }
+    #rowChip{
+      position: fixed; left: 10px; bottom: 70px; z-index: 2147483001;
+      background: #0a1222; color: #cfe1ff; border:1px solid #314d7a; border-radius: 999px;
+      padding: 6px 10px; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+      display:none; pointer-events:none; max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    @media (min-width: 821px){
+      #rowChip{ display:none !important; }
+    }
+    #pairDialog { color: #e8eaed; }
+    #pairDialog label { color: #e8eaed; }
+    #pairDialog input[type="checkbox"] { accent-color: #60a5fa; }
+    #pairDialog #pairList { background:#0c111c; }
+    body.sticky-names #grid th:nth-child(2), 
+    body.sticky-names #grid td:nth-child(2),
+    body.sticky-names #grid th:nth-child(3), 
+    body.sticky-names #grid td:nth-child(3){
+      background: #161a26 !important;
+      z-index: 5 !important;
+    }
+    body.sticky-names #grid th:nth-child(3), 
+    body.sticky-names #grid td:nth-child(3){
+      box-shadow: 8px 0 12px -8px rgba(0,0,0,.55) inset;
+    }
+    .prejoin { opacity:.45; filter:saturate(0.2); pointer-events:none }
+    .prejoin .status, .prejoin .guest-step, .prejoin .guest-zero, .prejoin .guest-input, .prejoin .pair-btn { pointer-events:none }
+    .name-badge { font-size:10px; color:#facc15; border:1px solid #4b5563; padding:1px 6px; border-radius:999px; margin-left:6px; background:#111827 }
+    #joinDialog { color:#e8eaed; }
+    #joinDialog * { color:#e8eaed; }
+    #joinDialog #joinList { background:#0c111c; }
+    #joinDialog select { background:#0c111c; border:1px solid #334155; color:#e8eaed; border-radius:8px; padding:6px; }
+    #joinDialog option { color:#e8eaed; background:#0c111c; }
+    .status[disabled]{ opacity:1 !important; }
+    .o2o-pill[disabled]{ opacity:1 !important; }
   </style>
 </head>
 <body>
@@ -178,7 +172,6 @@ body.sticky-names #grid td:nth-child(3){
   <div class="hint">RWD：右下角 📱 切換手機版、🔍 調整縮放（會記憶）。</div>
 </div>
 
-<!-- Password Modal -->
 <div id="pwdModal" style="display:none">
   <div id="pwdBox">
     <h3>輸入密碼以解鎖編輯</h3>
@@ -190,7 +183,6 @@ body.sticky-names #grid td:nth-child(3){
   </div>
 </div>
 
-<!-- 匯入對話框 -->
 <dialog id="importDialog">
   <form method="dialog" style="min-width:min(720px,90vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
     <h3 style="margin:0 0 8px;">匯入成員（每列：編號,姓名,專業別）</h3>
@@ -202,8 +194,6 @@ body.sticky-names #grid td:nth-child(3){
   </form>
 </dialog>
 
-
-<!-- 新增成員對話框 -->
 <dialog id="addMemberDialog">
   <form method="dialog" style="min-width:min(560px,90vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
     <h3 style="margin:0 0 8px;">新增成員</h3>
@@ -222,7 +212,6 @@ body.sticky-names #grid td:nth-child(3){
   </form>
 </dialog>
 
-<!-- 配對對話框 -->
 <dialog id="pairDialog">
   <form method="dialog" style="min-width:min(560px,92vw);background:#151a26;border:1px solid var(--border);border-radius:12px;padding:16px;">
     <h3 id="pairTitle" style="margin:0 0 8px;">選擇一對一對象</h3>
@@ -235,12 +224,19 @@ body.sticky-names #grid td:nth-child(3){
 </dialog>
 
 <script>
-// === 常數（新增 11/12、11/19、11/26） ===
-const DATES = ["10/01","10/08","10/15","10/22","10/29","11/05","11/12","11/19","11/26"];
-const DATE_KEYS = ["2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29","2025-11-05","2025-11-12","2025-11-19","2025-11-26"];
+// === 常數（含 10~12 月） ===
+const DATES = [
+  "10/01","10/08","10/15","10/22","10/29",
+  "11/05","11/12","11/19","11/26",
+  "12/03","12/10","12/17","12/24","12/31"
+];
+const DATE_KEYS = [
+  "2025-10-01","2025-10-08","2025-10-15","2025-10-22","2025-10-29",
+  "2025-11-05","2025-11-12","2025-11-19","2025-11-26",
+  "2025-12-03","2025-12-10","2025-12-17","2025-12-24","2025-12-31"
+];
 const MEMBERS_KEY = "core-team-members-2025-10";
 
-// 動態建立表頭（便於未來再加場次）
 function buildHeader(){
   const thead = document.getElementById('thead');
   if(!thead) return;
@@ -253,7 +249,6 @@ function buildHeader(){
   html += '</tr>';
   thead.innerHTML = html;
 
-  // 同步更新標題與日期列文字
   try{
     const titleH1 = document.getElementById('titleH1');
     if(titleH1){
@@ -278,7 +273,6 @@ function ensureMember14(){
   }catch(e){}
 }
 
-// ✅ 新增：確保 #15 顏子茵（助眠產品品牌商，加入日 2025-11-12）
 function ensureMember15(){
   try{
     if(!Array.isArray(MEMBERS)) MEMBERS = [];
@@ -290,7 +284,7 @@ function ensureMember15(){
     }
   }catch(e){}
 }
-// ✅ 新增：確保 #16 吳松齡（食材批發配送業）
+
 function ensureMember16(){
   try{
     if(!Array.isArray(MEMBERS)) MEMBERS = [];
@@ -302,7 +296,6 @@ function ensureMember16(){
     }
   }catch(e){}
 }
-
 
 let MEMBERS = [
   { id:1,  name:"徐國華", profession:"中藥包裝設備買賣業" },
@@ -326,7 +319,6 @@ let MEMBERS = [
 const tbody = document.getElementById('tbody');
 let READ_ONLY = true;
 
-// === UI helpers ===
 function setReadOnly(ro){
   READ_ONLY = ro;
   const badge = document.getElementById('modeBadge');
@@ -384,7 +376,6 @@ function buildTable(){
   setReadOnly(READ_ONLY);
 }
 
-// === Pairing ===
 const pairDialog=document.getElementById('pairDialog');
 const pairList=document.getElementById('pairList');
 const pairOK=document.getElementById('pairOK');
@@ -533,7 +524,6 @@ function buildMatrix(){
   tbl.innerHTML=html;
 }
 
-// === Export / Print ===
 function exportCSV(){
   const headers=['編號','姓名','專業別',...DATES,'出席率','來賓總數','帶來賓比率','一對一次數','一對一比率','總體績效'];
   const lines=[headers.join(',')];
@@ -550,14 +540,12 @@ function exportCSV(){
   });
   const bom = String.fromCharCode(65279);
   const blob=new Blob([bom+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='核心團成員_10-01_11-26.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='核心團成員_10-01_12-31.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 function printPage(){ window.print(); }
 
 function init(){
-  // Header first
   buildHeader();
-  // Try restore members from localStorage
   try{ const m = JSON.parse(localStorage.getItem(MEMBERS_KEY)||'null'); if(Array.isArray(m) && m.length){ MEMBERS = m; } }catch(e){}
   ensureMember14();
   ensureMember15();
@@ -608,11 +596,9 @@ function init(){
 init();
 </script>
 
-<!-- Firebase（app+firestore compat） -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
-// === Firestore Save/Load ===
 (function(){
   const firebaseConfig = {
     apiKey: "AIzaSyDDZYbqfz-A5BcpKmO_TO8ot5AAp4bUeTE",
@@ -658,7 +644,6 @@ init();
 })();
 </script>
 
-<!-- RWD toggles -->
 <div id="rwd_fab_bar" aria-label="RWD tools">
   <div id="rwd_fab_mobile" class="fab" title="手機版切換">📱</div>
   <div id="rwd_fab_zoom" class="fab" title="縮放">🔍</div>
@@ -803,8 +788,6 @@ init();
 })();
 </script>
 
-
-<!-- 加入日設定對話框 -->
 <dialog id="joinDialog">
   <form method="dialog" style="min-width:min(720px,92vw);background:#151a26;border:1px solid #262b3a;border-radius:12px;padding:16px;">
     <h3 style="margin:0 0 8px;">設定成員加入日期</h3>
@@ -816,9 +799,7 @@ init();
   </form>
 </dialog>
 
-
 <script>
-// === 加入日期：核心邏輯 ===
 (function(){
   function ensureJoinDates(){
     MEMBERS.forEach(function(m,i){
@@ -826,8 +807,8 @@ init();
     });
     var m13 = MEMBERS.find(m=>m.id===13);
     if(m13 && !m13._patchedOnce){ m13.joinDate = "2025-10-08"; m13._patchedOnce = true; }
-    ensureMember15(); // 確保 15 也有 joinDate
-    ensureMember16(); // 確保 16 也有 joinDate
+    ensureMember15();
+    ensureMember16();
   }
   ensureJoinDates();
 
@@ -871,34 +852,34 @@ init();
 
   var _fillRightSummary = window.fillRightSummary;
   window.fillRightSummary = function(tr,ri){
-  var cells=tr.querySelectorAll('td'); var present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
-  var j = new Date(MEMBERS[ri].joinDate || DATE_KEYS[0]);
-  DATE_KEYS.forEach(function(k,di){
-    var d = new Date(k);
-    if (d < j) return;
-    var cell=cells[3+di]; var v=cell.querySelector('.status').textContent;
-    if(v==='🟢'||v==='🟡'){ present++; }
-    var g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
-    var partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
-  });
-  var totalAll = DATE_KEYS.filter(function(k){ return (new Date(k) >= j); }).length;
-  var today = new Date();
-  var tenureEligible = DATE_KEYS.filter(function(k){ var d=new Date(k); return (d >= j) && (d <= today); }).length;
-  if (tenureEligible < 1) tenureEligible = 1;
-  var attRate= totalAll? Math.round((present/totalAll)*1000)/10 : 0;
-  var guestRate= present? Math.round((guestDays/present)*1000)/10 : 0;
-  var o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0;
-  var baseScore = (0.5*attRate + 0.25*guestRate + 0.25*o2oRate);
-  var tenureFactor = Math.min(1, tenureEligible / 4);
-  var perf = Math.round(baseScore * tenureFactor * 10)/10;
-  var base=3+DATE_KEYS.length;
-  var vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%'];
-  for(let i=0;i<6;i++){
-    var td=tr.querySelectorAll('td')[base+i];
-    td.textContent=vals[i];
-    td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i];
-  }
-};
+    var cells=tr.querySelectorAll('td'); var present=0, guestCnt=0, guestDays=0, o2oSum=0, o2oDays=0;
+    var j = new Date(MEMBERS[ri].joinDate || DATE_KEYS[0]);
+    DATE_KEYS.forEach(function(k,di){
+      var d = new Date(k);
+      if (d < j) return;
+      var cell=cells[3+di]; var v=cell.querySelector('.status').textContent;
+      if(v==='🟢'||v==='🟡'){ present++; }
+      var g=parseInt(cell.querySelector('.guest-input')?.value||'0')||0; guestCnt+=g; if(g>0 && (v==='🟢'||v==='🟡')) guestDays++;
+      var partners = JSON.parse(cell.querySelector('.pair-btn')?.dataset.partners||'[]'); if((v==='🟢'||v==='🟡') && partners.length>0) o2oDays++; o2oSum+=partners.length;
+    });
+    var totalAll = DATE_KEYS.filter(function(k){ return (new Date(k) >= j); }).length;
+    var today = new Date();
+    var tenureEligible = DATE_KEYS.filter(function(k){ var d=new Date(k); return (d >= j) && (d <= today); }).length;
+    if (tenureEligible < 1) tenureEligible = 1;
+    var attRate= totalAll? Math.round((present/totalAll)*1000)/10 : 0;
+    var guestRate= present? Math.round((guestDays/present)*1000)/10 : 0;
+    var o2oRate= present? Math.round((o2oDays/present)*1000)/10 : 0;
+    var baseScore = (0.5*attRate + 0.25*guestRate + 0.25*o2oRate);
+    var tenureFactor = Math.min(1, tenureEligible / 4);
+    var perf = Math.round(baseScore * tenureFactor * 10)/10;
+    var base=3+DATE_KEYS.length;
+    var vals=[attRate.toFixed(1)+'%', guestCnt, guestRate.toFixed(1)+'%', o2oSum, o2oRate.toFixed(1)+'%', perf.toFixed(1)+'%'];
+    for(let i=0;i<6;i++){
+      var td=tr.querySelectorAll('td')[base+i];
+      td.textContent=vals[i];
+      td.className=['att-rate','guest-sum','guest-rate','o2o-sum','o2o-rate','perf-score'][i];
+    }
+  };
 
   var _updateTotals = window.updateTotals;
   window.updateTotals = function(){
@@ -1042,9 +1023,7 @@ init();
 })();
 </script>
 
-
 <script>
-// === 單筆新增成員（維持） ===
 (function(){
   function nextMemberIdSafe(){
     try{
@@ -1079,7 +1058,7 @@ init();
         fProf.value = '';
         dlg.showModal();
       });
-      
+
       ok.addEventListener('click', function(){
         if(window.READ_ONLY) return;
         var id = Number(fId.value) || nextMemberIdSafe();
@@ -1121,7 +1100,7 @@ init();
   }
   try{
     var style = document.createElement('style');
-    style.textContent = '#addMemberDialog input{color:#e8eaed !important;} #addMemberDialog input::placeholder{color:#e8eaed !important; opacity:0.7;}';
+    style.textContent = '#addMemberDialog input{color:#e8eaed !重要;} #addMemberDialog input::placeholder{color:#e8eaed !重要; opacity:0.7;}';
     document.head.appendChild(style);
   }catch(e){}
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', wire); } else { wire(); }
